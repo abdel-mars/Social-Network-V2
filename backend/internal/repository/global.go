@@ -3,19 +3,16 @@ package repository
 import (
 	"database/sql"
 	"regexp"
-	"github.com/gorilla/websocket"
 	"time"
 )
 
 var (
-	EmailExp        *regexp.Regexp
-	UsernameExp     *regexp.Regexp
-	DB              *sql.DB
-	Clients = make(map[int]*websocket.Conn) 
-	Notification_01 = make(chan Notification) 
+	EmailExp    *regexp.Regexp
+	UsernameExp *regexp.Regexp
+	DB          *sql.DB
 )
 
-// << Notification Struct {} >> .! 
+// << Notification Struct {} >> .!
 type Notification struct {
 	ID        int       `json:"id"`
 	UserID    int       `json:"user_id"`
@@ -32,19 +29,18 @@ type Notification struct {
 		LastName  string `json:"last_name"`
 		Avatar    string `json:"avatar"`
 	} `json:"sender"`
-	ReceiverIsPrivate bool `json:"receiver_is_private"`
-	GroupTitle string `json:"group_title"`
-	GroupID          int `json:"group_id"`
+	ReceiverIsPrivate bool   `json:"receiver_is_private"`
+	GroupTitle        string `json:"group_title"`
+	GroupID           int    `json:"group_id"`
 }
 
-
-// <<<======>>> !! 
+// <<<======>>> !!
 type Old_Notificaion struct {
-	Data []Notification `json:"data"`
+	Data   []Notification `json:"data"`
 	Sender *Sender_data
 }
 
-// <<==>>  Send the Nootification whith the sender to front that's it 
+// <<==>>  Send the Nootification whith the sender to front that's it
 
 type NotificationWithSender struct {
 	ID        int       `json:"id"`
@@ -69,15 +65,16 @@ type Sender_data struct {
 	Avatar    string `json:"avatar"`
 }
 type Receiver_data struct {
-	ID        int    `json:"id"`
-	IsPrivate bool   `json:"is_private"`
+	ID        int  `json:"id"`
+	IsPrivate bool `json:"is_private"`
 }
+
 // Her I Will Declared In Shared Map And Chanell Where I Will Send Data To Notification !
 // <<<===>>>
 // <<====>> !_!
 // Her This It's Key For Colision Will Not Happning When I Want To Set To Context Request and get
 
-/// <==================================>
+// / <==================================>
 type contextKey string
 
 const UserIDKey contextKey = "userID"
@@ -88,47 +85,47 @@ type User struct {
 	Email     string  `json:"email"`
 	FirstName string  `json:"first_name"`
 	LastName  string  `json:"last_name"`
-	Age       *int    `json:"age,omitempty"`        
-	Gender    *string `json:"gender,omitempty"`    
+	Age       *int    `json:"age,omitempty"`
+	Gender    *string `json:"gender,omitempty"`
 	Nickname  *string `json:"nickname,omitempty"`
 	About     *string `json:"about,omitempty"`
 	Avatar    *string `json:"avatar,omitempty"`
 	CreatedAt string  `json:"created_at"`
 	UpdatedAt string  `json:"updated_at"`
-	IsPrivate *int    `json:"is_private"`          
+	IsPrivate *int    `json:"is_private"`
 }
 
 // Post Letter !!....
 type Post struct {
-	Title string `json:"title"`
-    Content string `json:"content"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }
 
 type Posts struct {
-    ID           int     `json:"id"`
-    UserID       int     `json:"user_id"`
-    UserName     string  `json:"username"`
-    FullName     string  `json:"full_name"`
+	ID            int     `json:"id"`
+	UserID        int     `json:"user_id"`
+	UserName      string  `json:"username"`
+	FullName      string  `json:"full_name"`
 	Avatar        *string `json:"avatar,omitempty"`
-    Title        string  `json:"title"`
-    Content      string  `json:"content"`
+	Title         string  `json:"title"`
+	Content       string  `json:"content"`
 	ImagePath     *string `json:"image_path"`
-    CreatedAt    string  `json:"created_at"`
-    UpdatedAt    string  `json:"updated_at"`
-    LikesCount   int     `json:"likes_count"`
-    DislikesCount int    `json:"dislikes_count"`
-    UserReaction *string `json:"userReaction"` 
+	CreatedAt     string  `json:"created_at"`
+	UpdatedAt     string  `json:"updated_at"`
+	LikesCount    int     `json:"likes_count"`
+	DislikesCount int     `json:"dislikes_count"`
+	UserReaction  *string `json:"userReaction"`
 }
 
 type Sugg struct {
 	// format json
-	UserID       int     `json:"user_id"`
-    UserName     string  `json:"username"`
-    FullName     string  `json:"full_name"`
-	ImagePath     *string `json:"image_path"`
+	UserID    int     `json:"user_id"`
+	UserName  string  `json:"username"`
+	FullName  string  `json:"full_name"`
+	ImagePath *string `json:"image_path"`
 }
 
-// ....<=====>.... 
+// ....<=====>....
 // Users Limitations
 const (
 	// Email limitations
