@@ -1,0 +1,47 @@
+.chatLayout {
+    display: flex;
+    height: 100vh;
+    background-color: #141414;
+}
+
+.chatMain {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.chatContainer {
+    display: flex;
+    flex: 1;
+    background: #141414;
+    overflow: hidden;
+    position: relative;
+}
+
+.conversationListWrapper,
+.chatWindowWrapper {
+    height: 100%;
+    display: flex;
+}
+
+.conversationListWrapper {
+    width: 320px;
+}
+
+.chatWindowWrapper {
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .hideOnMobile {
+        display: none !important;
+    }
+
+    .conversationListWrapper,
+    .chatWindowWrapper {
+        width: 100%;
+    }
+}
