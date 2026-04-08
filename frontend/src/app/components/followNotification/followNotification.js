@@ -9,6 +9,8 @@ export default function FollowRequest({ request }) {
     request.receiver_is_private === true ? "pending" : "accepted"
   );
   // << Her is alot of thing to be
+  const [followBackStatus, setFollowBackStatus] = useState("not_following");
+
   const handleFollowAction = async (senderId, action) => {
     try {
       console.log("her i hamdler")
@@ -21,7 +23,7 @@ export default function FollowRequest({ request }) {
           status: action, // 
         }),
       });
-  
+
       if (res.ok) {
         setStatus(action); //  
       } else {
@@ -31,7 +33,29 @@ export default function FollowRequest({ request }) {
       console.error("Error:", err);
     }
   };
-  
+
+  const [followBackLoading, setFollowBackLoading] = useState(false);
+
+  const handleFollowBack = async (user_id) => {
+    try {
+      setFollowBackLoading(true);
+      const res = await fetch("http://localhost:8080/toggle-follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ followed_id: user_id }),
+        credentials: "include",
+      });
+      if (res.ok) {
+        setFollowBackStatus("following");
+        window.dispatchEvent(new CustomEvent("followUpdated"));
+      }
+    } catch (err) {
+      console.error("Error following back:", err);
+    } finally {
+      setFollowBackLoading(false);
+    }
+  };
+
   // Removed local timeAgo function; using imported helper
 
   return (
@@ -49,16 +73,25 @@ export default function FollowRequest({ request }) {
           <p className={styles.username}>@{request.sender.username}</p>
           {status === "pending"}
           {status === "accepted" && (
-            <p className={`${styles.message} ${styles.accepted}`}>
-              The user A it's starting following u 
-            </p>
+            <div className={styles.acceptedContainer}>
+              <p className={`${styles.message} ${styles.accepted}`}>
+                Started following you
+              </p>
+              <button
+                className={styles.followBackBtn}
+                onClick={() => handleFollowBack(request.sender.id)}
+                disabled={followBackStatus === "following" || followBackLoading}
+              >
+                {followBackLoading ? "..." : (followBackStatus === "following" ? "Following" : "Follow Back")}
+              </button>
+            </div>
           )}
           {status === "rejected" && (
             <p className={`${styles.message} ${styles.rejected}`}>
               You rejected the request
             </p>
           )}
-          
+
         </div>
       </div>
       <div></div>
@@ -66,14 +99,14 @@ export default function FollowRequest({ request }) {
         <div className={styles.actions}>
           <button
             className={`${styles.button} ${styles.accept}`}
-            onClick={() => handleFollowAction(request.sender.id,  "accept")}
-            >
+            onClick={() => handleFollowAction(request.sender.id, "accept")}
+          >
             Accept
           </button>
           <button
             className={`${styles.button} ${styles.reject}`}
-            onClick={() =>  handleFollowAction(request.sender.id,  "reject")}
-            >
+            onClick={() => handleFollowAction(request.sender.id, "reject")}
+          >
             Reject
           </button>
         </div>

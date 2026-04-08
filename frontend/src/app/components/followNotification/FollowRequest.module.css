@@ -1,18 +1,21 @@
-.followRequest{
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+.followRequest {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.avatar{
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
-.info{
-    display: flex;
-    gap: 10px;
+
+.info {
+  display: flex;
+  gap: 10px;
 }
+
 .actions {
   display: flex;
   gap: 5px;
@@ -27,9 +30,48 @@
 }
 
 .accept {
-  background-color: green;
+  background-color: #963AFF;
 }
 
 .reject {
-  background-color: red;
+  background-color: #333;
+}
+
+.acceptedContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.followBackBtn {
+  background-color: #963AFF;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.followBackBtn:hover:not(:disabled) {
+  background-color: #a656ff;
+  transform: translateY(-1px);
+}
+
+.followBackBtn:disabled {
+  background-color: #444;
+  cursor: default;
+}
+
+.message {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.username {
+  color: #666;
+  font-size: 13px;
 }
