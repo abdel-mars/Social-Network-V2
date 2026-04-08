@@ -11,7 +11,7 @@ export function Renderbar() {
   const router = useRouter();
   const handleNavigate = (path) => {
     router.push(path);
-  };  
+  };
   useEffect(() => {
     const storedId = localStorage.getItem("userId");
     setUserId(storedId);
@@ -32,7 +32,7 @@ export function Renderbar() {
           >
             Profile
           </li>
-          <li className={style.navItem}>Chat</li>
+          <li className={style.navItem} onClick={() => handleNavigate("/chat")}>Chat</li>
           <li className={style.navItem} onClick={() => handleNavigate("/groups")}> Groups</li>
           <Logoutrender handleNavigate={handleNavigate} />
         </ul>
@@ -44,7 +44,7 @@ export function Renderbar() {
 
       {/* Render notifications inside sidebar */}
       <div className={style.cardTheme}>
-        <NotificationPanel/>
+        <NotificationPanel />
       </div>
     </aside>
   );
