@@ -2,9 +2,12 @@ package initialdb
 
 import (
 	"database/sql"
-	repo "social-network-backend/internal/repository"
+	"fmt"
 	"log"
 	"os"
+	repo "social-network-backend/internal/repository"
+	"strings"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -23,10 +26,27 @@ func InitDB(datasource string) {
 }
 
 func CreateTable(db *sql.DB) error {
-	schema, err := os.ReadFile("./database/schema.sql")
+	files, err := os.ReadDir("./database")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read database directory: %v", err)
 	}
-	_, err = db.Exec(string(schema))
-	return err
+
+	for _, file := range files {
+		if file.IsDir() || !strings.HasSuffix(file.Name(), ".sql") {
+			continue
+		}
+
+		path := "./database/" + file.Name()
+		schema, err := os.ReadFile(path)
+		if err != nil {
+			log.Printf("Warning: failed to read schema file %s: %v", path, err)
+			continue
+		}
+
+		_, err = db.Exec(string(schema))
+		if err != nil {
+			return fmt.Errorf("failed to execute schema %s: %v", path, err)
+		}
+	}
+	return nil
 }
