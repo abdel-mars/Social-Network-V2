@@ -1,12 +1,3 @@
-/* input autofill set to match theme transition is to prevent flashing white color */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus {
-    box-shadow: 0 0 0px 1000px #232323 inset;
-    -webkit-text-fill-color: #ddd;
-    transition: background-color 5000s ease-in-out;
-}
-
 .registerContainer {
     min-height: 100svh;
     background-color: #141414;

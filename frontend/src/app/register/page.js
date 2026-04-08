@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Toast from "../components/ui/Toast";
 import style from "./register.module.css";
+
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -22,6 +24,8 @@ export default function RegisterPage() {
   const [avatar, setAvatar] = useState(null);
   const router = useRouter();
 
+  const [notification, setNotification] = useState(null);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -32,22 +36,36 @@ export default function RegisterPage() {
     for (let key in form) formData.append(key, form[key]);
     if (avatar) formData.append("avatar", avatar);
 
-    const res = await fetch("http://localhost:8080/register", {
-      method: "POST",
-      body: formData,
-    });
+    try {
+      const res = await fetch("http://localhost:8080/register", {
+        method: "POST",
+        body: formData,
+      });
 
-    const data = await res.json();
-    if (res.ok) {
-      alert("Account created!");
-      router.push("/");
-    } else {
-      alert(data.message || "Registration failed");
+      const data = await res.json();
+      if (res.ok) {
+        setNotification({ message: "Registration successful! Redirecting...", type: "success" });
+        setTimeout(() => {
+          router.push(`/?username=${form.username}&email=${form.email}`);
+        }, 1500);
+      } else {
+        setNotification({ message: data.message || "Registration failed", type: "error" });
+      }
+    } catch (err) {
+      setNotification({ message: "Connecting error", type: "error" });
     }
   };
 
   return (
     <main className={style.registerContainer}>
+      {notification && (
+        <Toast
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
       <form
         onSubmit={handleSubmit}
         encType="multipart/form-data"
@@ -176,9 +194,8 @@ export default function RegisterPage() {
               id="about"
               className={style.registerAbout}
               name="about"
-              placeholder="About me"
+              placeholder="Tell us about yourself..."
               onChange={handleChange}
-              style={{ minHeight: "80px" }}
             ></textarea>
           </div>
         </div>
