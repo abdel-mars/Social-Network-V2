@@ -36,8 +36,11 @@ export default function UsersList() {
     fetchUsers();
   }, []);
 
+  const [folloading, setFolloading] = useState({});
+
   const handleFollowToggle = async (user_id) => {
     try {
+      setFolloading(prev => ({ ...prev, [user_id]: true }));
       const res = await fetch("http://localhost:8080/toggle-follow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -45,16 +48,18 @@ export default function UsersList() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to toggle follow");
-      const data = await res.json(); 
-      // data = { following: true/false, status: "pending"|"accepted" }
-      // update follow state
-      setFollowing((prev) => ({
-        ...prev,
-        [user_id]: data.status || (data.following ? "accepted" : "not_following"),
-      }));
+      const data = await res.json();
+
+      // Immediately remove from suggestions if they are now followed or pending
+      if (data.following || data.status === "pending") {
+        setUsers((prev) => prev.filter(u => u.user_id !== user_id));
+        window.dispatchEvent(new CustomEvent("followUpdated"));
+      }
 
     } catch (err) {
       console.error("Error toggling follow:", err);
+    } finally {
+      setFolloading(prev => ({ ...prev, [user_id]: false }));
     }
   };
 
@@ -96,6 +101,7 @@ export default function UsersList() {
                   <FollowButton
                     status={status || "not_following"}
                     onToggle={() => handleFollowToggle(u.user_id)}
+                    loading={folloading[u.user_id]}
                   />
                 </div>
               );
