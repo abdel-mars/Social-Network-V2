@@ -8,24 +8,18 @@ export function NotificationPanel() {
 
   // Her notfication useEffect !! >
   const [notifications, setNotifications] = useState([]);
-   const [ws, setWs] = useState(null);
-  // <<<<===========>>>> !!!
-  let socket;
-  // HER ill Open socket tunel with back-end for
+  // HER ill Open SSE tunnel with back-end
   useEffect(() => {
-    socket = new WebSocket("ws://localhost:8080/ws");
-    setWs(socket);
-    socket.onopen = () => console.log(" WebSocket connected");
-    socket.onmessage = (e) => {
+    const eventSource = new EventSource("http://localhost:8080/events", { withCredentials: true });
+
+    eventSource.onmessage = (e) => {
       let notif = JSON.parse(e.data);
-      console.log("The notification who is come ", notif)
-      // <<====>>..!
+      console.log("The notification who is come ", notif);
       if (!Array.isArray(notif)) {
         notif = [notif];
       }
       setNotifications((prev) => {
         const current = Array.isArray(prev) ? prev : [];
-        // <<=====>>> !!!
         const newNotifs = notif.filter(
           (n) => !current.some((c) => c.id === n.id)
         );
@@ -33,12 +27,16 @@ export function NotificationPanel() {
       });
     };
 
-    socket.onclose = () => console.log(" WebSocket closed");
-    socket.onerror = (err) => console.error("⚠️ WebSocket error:", err);
-    // For Testing The Socket With Back-End !
-    window.ws = socket;
-    // <=====================================>
+    eventSource.onerror = (err) => {
+      console.error("⚠️ SSE error:", err);
+      // EventSource automatically reconnects, but we logs it
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, []);
+
 
   // hhhhhhhhhhhh 
   useEffect(() => {
