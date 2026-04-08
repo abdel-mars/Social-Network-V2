@@ -1,12 +1,11 @@
 package handler
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	repo "social-network-backend/internal/repository"
-	"encoding/json"
-	"database/sql"
-
 )
 
 // Getusers handles the HTTP request to return all users !!
@@ -14,9 +13,9 @@ func Getusers(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("hello i want the users to showing them in front ok")
 	userID, ok := r.Context().Value(repo.UserIDKey).(int)
 	if !ok {
-        http.Error(w, "Username Not Found In Context", http.StatusUnauthorized)
-        return
-    }
+		http.Error(w, "Username Not Found In Context", http.StatusUnauthorized)
+		return
+	}
 	users, err := getallusers(userID)
 	fmt.Println(users)
 	if err != nil {
@@ -28,6 +27,21 @@ func Getusers(w http.ResponseWriter, r *http.Request) {
 }
 
 // getallusers fetches all users from the database
+func getFollowStatus(followerID, followedID int) (bool, bool, error) {
+	var status string
+	err := repo.DB.QueryRow(`
+		SELECT status FROM followers 
+		WHERE follower_id = ? AND followed_id = ?`,
+		followerID, followedID).Scan(&status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, false, nil
+		}
+		return false, false, err
+	}
+	return status == "accepted", status == "pending", nil
+}
+
 func getallusers(user_id int) ([]repo.Sugg, error) {
 	query := `
 		SELECT id, username, first_name, last_name, avatar
@@ -51,12 +65,15 @@ func getallusers(user_id int) ([]repo.Sugg, error) {
 		if err != nil {
 			return nil, err
 		}
-		// here i will skip 
-		folowthem , err  := IsFollowing(user_id, u.UserID)
-		if ((user_id == u.UserID || folowthem)) {
+		// check follow status: accepted or pending
+		isFollowed, isPending, err := getFollowStatus(user_id, u.UserID)
+		if err != nil {
+			return nil, err
+		}
+		if user_id == u.UserID || isFollowed || isPending {
 			continue
 		}
-		// here it's combined full name 
+		// Combined full name
 		fullName := ""
 		if firstName.Valid {
 			fullName += firstName.String

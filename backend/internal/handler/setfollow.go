@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	notificationgoroutine "social-network-backend/internal/notificationGoroutine"
 	repo "social-network-backend/internal/repository"
 )
 
@@ -34,7 +35,7 @@ func Setfollowers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	var status string 
+	var status string
 	// Here I Will Check The Curent Status at db if it's pending !
 	ispanding, err := idPnadinstate(userID, req.FollowedID)
 	fmt.Println("=========================================")
@@ -46,7 +47,7 @@ func Setfollowers(w http.ResponseWriter, r *http.Request) {
 		// here i will remove the padding
 		RemoveFollow(userID, req.FollowedID)
 		RemoveNotification(userID, req.FollowedID, "Invitation_friendships")
-		status = "Howa" 
+		status = "Howa"
 		// !-! <<==(.)==>> !-!
 		// Copy Of the Users In To In Another Data Set ....
 		// <<=====>>
@@ -83,26 +84,22 @@ func Setfollowers(w http.ResponseWriter, r *http.Request) {
 		// << Here I Will store t HE NOTIFICATION IN DATA BASE FOR TRACK THE EVENT
 		// Here I Will Register The <.> !
 		message := fmt.Sprintf("The Request It's Done And It's At State %s", status)
-		Notification_ID , err := AddNotification(userID, req.FollowedID,"Invitation_friendships", message);
+		Notification_ID, err := AddNotification(userID, req.FollowedID, "Invitation_friendships", message)
 		if err != nil {
 			http.Error(w, "server erro", http.StatusInternalServerError)
 		}
-		// Her I Will Get The Data By Id 
-		fmt.Printf("Sender_data%+v\n", )
-		 
+		// Her I Will Get The Data By Id
+		Notif, err := GetNotificationByID(int(Notification_ID))
 		if err != nil {
-			http.Error(w, "Failed to get followers count", http.StatusInternalServerError)
+			fmt.Println("Error getting notification by ID:", err)
 		}
-		/// I Wil Get Inforamtion Like I Do In Notification 
-		// 
-		Notif , err:= GetNotificationByID(int(Notification_ID))
-		fmt.Println("<<<< Im At The Case Of The Notificaion >>>>") 
-		fmt.Printf("Sender_data%+v\n", Notif)
-		////<<<===>>> !!
-		fmt.Println("this the art of data <<<====>> ")
-		fmt.Printf("==> %v <==\n", Notif)
-		fmt.Println("oppps the datat it's go to the reciever")
-		repo.Notification_01 <- *Notif
+
+		if Notif != nil {
+			fmt.Println("<<<< Sending Real-time Notification >>>>")
+			notificationgoroutine.SendNotification(*Notif)
+		} else {
+			fmt.Println("Warning: Notification not found for ID", Notification_ID)
+		}
 	}
 
 	followers_Count, err := GetFollowersCount(req.FollowedID)
@@ -126,8 +123,8 @@ func Setfollowers(w http.ResponseWriter, r *http.Request) {
 		FollowingCount: following_Count,
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(res) // <<===>>...! 
-} 
+	json.NewEncoder(w).Encode(res) // <<===>>...!
+}
 
 func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 	row := repo.DB.QueryRow(`
@@ -146,6 +143,7 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 
 	var n repo.Notification
 	var groupTitle sql.NullString
+	var groupID sql.NullInt64
 
 	err := row.Scan(
 		&n.ID,
@@ -161,7 +159,7 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 		&n.Sender.LastName,
 		&n.Sender.Avatar,
 		&n.ReceiverIsPrivate,
-		&n.GroupID,   // <<< scan the group_id here
+		&groupID, // Use NullInt64 for potentially null field
 		&groupTitle,
 	)
 	if err != nil {
@@ -177,37 +175,42 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 		n.GroupTitle = ""
 	}
 
+	if groupID.Valid {
+		n.GroupID = int(groupID.Int64)
+	} else {
+		n.GroupID = 0
+	}
+
 	return &n, nil
 }
 
-
-//////// <<<=====>>>
+// ////// <<<=====>>>
 func AddNotification(userID, followedID int, notifType, message string) (int64, error) {
-    result, err := repo.DB.Exec(`
+	result, err := repo.DB.Exec(`
         INSERT INTO notifications (user_id, sender_id, type, message)
         VALUES (?, ?, ?, ?)
     `, followedID, userID, notifType, message)
-    if err != nil {
-        return 0, err
-    }
+	if err != nil {
+		return 0, err
+	}
 
-    id, err := result.LastInsertId()
-    if err != nil {
-        return 0, err
-    }
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
 
-    return id, nil
+	return id, nil
 }
 
 // Remove a notification
 func RemoveNotification(userID, followedID int, notifType string) {
-    _, err := repo.DB.Exec(`
+	_, err := repo.DB.Exec(`
         DELETE FROM notifications
         WHERE user_id = ? AND sender_id = ? AND type = ?
     `, followedID, userID, notifType)
-    if err != nil {
-        fmt.Println("Error removing notification:", err)
-    }
+	if err != nil {
+		fmt.Println("Error removing notification:", err)
+	}
 }
 
 func IsFollowing(followerID, followedID int) (bool, error) {
