@@ -1,0 +1,30 @@
+.friendListButton{
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+    outline: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: white;
+}
+.FriendBtnList{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+.ListContainer{
+    width: 100%;
+}
+.EmptyFriends{
+    display: flex;
+    width: 100%;
+    min-height: 300px;
+    align-items: center;
+    justify-content: center;
+}

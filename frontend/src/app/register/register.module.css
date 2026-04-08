@@ -1,0 +1,124 @@
+/* input autofill set to match theme transition is to prevent flashing white color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    box-shadow: 0 0 0px 1000px #232323 inset;
+    -webkit-text-fill-color: #ddd;
+    transition: background-color 5000s ease-in-out;
+}
+
+.registerContainer {
+    min-height: 100svh;
+    background-color: #141414;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.registerForm {
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 530px;
+    background-color: #1B1B1B;
+    border: solid 1px #41414180;
+    border-radius: 8px;
+    padding: 40px 36px;
+    align-items: center;
+    justify-content: center;
+}
+
+.formRow {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 14px;
+}
+
+.registerForm h2 {
+    color: white;
+}
+
+.inputContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.registerForm input,
+.registerForm button,
+.registerAbout {
+    resize: none;
+    color: white;
+    width: 100%;
+}
+
+.registerForm input {
+    background-color: #232323;
+}
+
+.registerForm input:focus,
+.registerAbout:focus {
+    outline: none;
+    border: solid 1px #963AFF45;
+}
+
+.registerInput,
+.registerAbout {
+    padding: 12px;
+    border-radius: 8px;
+    background-color: #232323;
+    border: solid 1px #414141;
+    width: 100%;
+}
+
+.registerSubmit {
+    padding: 12px;
+    border-radius: 8px;
+    background-color: #963AFF;
+    border: solid 1px #963AFF40;
+    width: 100%;
+}
+
+.formIcon {
+    background-color: #963AFF25;
+    padding: 16px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.fileInput {
+    display: none;
+}
+
+.fileLabel {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #1e1e1e;
+    color: #fff;
+    font-size: 14px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, border 0.2s;
+    text-align: center;
+}
+
+.fileLabel:hover {
+    background-color: #2a2a2a;
+    border-color: #963aff;
+}
+
+.fileLabel {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

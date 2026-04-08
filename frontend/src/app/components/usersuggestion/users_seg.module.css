@@ -1,0 +1,78 @@
+.rightSidebar {
+    padding: 16px;
+    min-width: 300px;
+    background-color: #141414;
+}
+
+.usersCard {
+    padding: 20px;
+    background-color: #1b1b1b;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    border: 1px solid #41414199;
+}
+
+.usersCard h3 {
+    color: white;
+    font-size: 18px;
+    font-weight: 400;
+}
+
+.usersList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.userSug {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px;
+}
+
+.userAvatar {
+    border: 1px solid #41414199;
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.userSugProfile {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.userNameSug {
+    color: white;
+}
+
+.followButton {
+    background-color: #963aff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
+
+.followButtonAccepted {
+    background-color: #141414;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
+.usersListEmpty{
+    width: 100%;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}

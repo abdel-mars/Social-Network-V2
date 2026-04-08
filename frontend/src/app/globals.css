@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;700&display=swap');
+
+*{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 300;
+}
+
+/* input autofill set to match theme transition is to prevent flashing white color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    box-shadow: 0 0 0px 1000px #232323 inset;
+    -webkit-text-fill-color: #ddd;
+    transition: background-color 5000s ease-in-out;
+}

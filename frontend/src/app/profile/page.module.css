@@ -1,0 +1,85 @@
+.pageContainer {
+    display: flex;
+    flex-direction: row;
+}
+
+.profileContainer {
+    flex-grow: 1;
+    padding: 16px;
+    background-color: #141414;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.profileCard {
+    background-color: #1b1b1b;
+    border: 1px solid #41414199;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.profileCoverPhoto {
+    width: 100%;
+    max-height: 250px;
+
+}
+
+.profileCoverPhoto img {
+    width: 100%;
+    max-height: 250px;
+    object-fit: cover;
+}
+
+.profileAvatar img {
+    margin-top: -80px;
+    height: 150px;
+    border: 2px solid #414141;
+    width: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profileFollowData {
+    display: flex;
+    gap: 24px;
+}
+
+.profileFollowBox {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+}
+
+.profileLeft {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+}
+
+.profileDetails {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    padding: 20px;
+}
+
+.profileFooter {
+    padding: 20px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+}
+.profileExtra{
+    display: flex;
+    gap: 30px;
+}
+.detailContainer{
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+}

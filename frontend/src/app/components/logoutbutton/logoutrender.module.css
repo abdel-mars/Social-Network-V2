@@ -1,0 +1,9 @@
+.logoutButton {
+    width: 100%;
+    padding: 10px;
+    border: solid 1px lightcoral;
+    border-radius: 6px;
+    cursor: pointer;
+    background-color: transparent;
+    color: lightcoral;
+}

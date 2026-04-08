@@ -1,0 +1,35 @@
+.leftSideBar {
+    width: 320px;
+    background-color: #141414;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+}
+
+.cardTheme {
+    background-color: #1B1B1B;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    align-items: flex-start;
+    border: solid 1px #41414199;
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 20px;
+}
+.cardTheme ul{
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+.navItem {
+    width: 100%;
+    padding: 10px;
+    border: solid 1px #41414199;
+    border-radius: 6px;
+    cursor: pointer;
+}

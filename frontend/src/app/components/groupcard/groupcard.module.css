@@ -1,0 +1,9 @@
+.groupCard{
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #1B1B1B;
+    
+    flex: .47;
+    min-width: 400px;
+    border: solid 1px #41414199;
+}

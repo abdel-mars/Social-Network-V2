@@ -1,0 +1,42 @@
+.homeMain {
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.homeContainer {
+    background-color: #141414;
+    min-height: 100svh;
+    display: flex;
+}
+
+.homeHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #41414199;
+    background-color: #1B1B1B;
+}
+
+.homeHeader h1 {
+    color: white;
+    font-weight: 400;
+    font-size: 22px;
+}
+.postsFeed{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.createPostButton {
+    padding: 12px;
+    border-radius: 8px;
+    background-color: #963AFF;
+    border: solid 1px #963AFF40;
+    color: white;
+}

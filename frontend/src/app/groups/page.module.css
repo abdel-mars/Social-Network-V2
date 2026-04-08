@@ -1,0 +1,16 @@
+.groupsContainer{
+    display: flex;
+}
+.groupsList{
+    color: white;
+    flex: 1;
+    align-content: flex-start;
+    background-color: #141414;
+    padding: 16px;
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+}
