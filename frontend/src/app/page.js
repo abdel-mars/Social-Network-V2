@@ -2,16 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { LogIn } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Toast from "./components/ui/Toast";
 import styles from "./page.module.css";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
-  const [detect, setDectec] = useState(false);
+  const [detect, setDetect] = useState(false);
+  const [notification, setNotification] = useState(null);
+
   const router = useRouter();
-  
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const prefill = searchParams.get("username") || searchParams.get("email");
+    if (prefill) {
+      setUsername(prefill);
+      setNotification({ message: "Account created! You can now login.", type: "success" });
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     async function checkAuth() {
       try {
@@ -19,12 +31,10 @@ export default function LoginPage() {
           method: "GET",
           credentials: "include",
         });
-        console.log("The checker it's call !!");
-        console.log(res);
         const data = await res.json();
         if (res.ok && data.authenticated) {
-          setDectec(true);
-          router.push("/home"); // already logged in → go home
+          setDetect(true);
+          router.push("/home");
         }
       } catch (err) {
         console.error("Error checking auth:", err);
@@ -32,7 +42,6 @@ export default function LoginPage() {
         setLoading(false);
       }
     }
-
     checkAuth();
   }, [router]);
 
@@ -43,93 +52,88 @@ export default function LoginPage() {
       const res = await fetch("http://localhost:8080/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // <<====>>
+        credentials: "include",
         body: JSON.stringify({ username, password }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        console.log("Login success:", data);
-        console.log(data);
+        setNotification({ message: "Login successful!", type: "success" });
         localStorage.setItem("userId", data.user_id);
-        router.push("/home");
+        setTimeout(() => {
+          router.push("/home");
+        }, 1000);
       } else {
-        alert(data.message || "Login failed");
+        setNotification({ message: data.message || "Login failed", type: "error" });
       }
     } catch (err) {
-      console.error("Error:", err);
-      alert("Network error");
+      setNotification({ message: "Network error", type: "error" });
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
-      <p
-        style={{
-          textAlign: "center",
-          marginTop: "100px",
-          color: "var(--outer-space)",
-        }}
-      >
-        Checking session...
-      </p>
+      <div className={styles.loginContainer}>
+        <p style={{ color: "white" }}>Checking session...</p>
+      </div>
     );
+  }
+
   if (!detect) {
     return (
-      <main className={`login ${styles.loginContainer}`}>
-        <form onSubmit={handleLogin} className={`card ${styles.loginForm}`}>
+      <main className={styles.loginContainer}>
+        {notification && (
+          <Toast
+            message={notification.message}
+            type={notification.type}
+            onClose={() => setNotification(null)}
+          />
+        )}
+        <form onSubmit={handleLogin} className={styles.loginForm}>
           <div className={styles.formIcon}>
-            <LogIn color="#963AFF"/>
+            <LogIn color="#963AFF" />
           </div>
           <h2>Welcome Back</h2>
           <p>Sign in to your 01Social account</p>
           <div className={styles.inputContainer}>
-            <label htmlFor="username">username or email</label>
+            <label htmlFor="username">Username or Email</label>
             <input
+              id="username"
               className={styles.loginInput}
               name="username"
               type="text"
               placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              required
             />
           </div>
           <div className={styles.inputContainer}>
-            <label htmlFor="password">password</label>
+            <label htmlFor="password">Password</label>
             <input
+              id="password"
               className={styles.loginInput}
               name="password"
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
           </div>
 
-          <button type="submit" className={styles.loginSubmit}>
-            Login
+          <button type="submit" className={styles.loginSubmit} disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </button>
-          <p
-            style={{
-              textAlign: "center",
-              color: "var(--paynes-gray)",
-              fontSize: "14px",
-            }}
-          >
+
+          <p className={styles.registerLink}>
             Don't have an account?{" "}
             <button
               type="button"
               onClick={() => router.push("/register")}
-              style={{
-                color: "var(--blue-munsell)",
-                border: "none",
-                background: "none",
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
             >
               Create one
             </button>
@@ -138,5 +142,6 @@ export default function LoginPage() {
       </main>
     );
   }
+
   return null;
 }

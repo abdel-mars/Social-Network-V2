@@ -1,12 +1,12 @@
-
-.loginContainer{
+.loginContainer {
   min-height: 100svh;
   background-color: #141414;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.loginForm{
+
+.loginForm {
   color: white;
   display: flex;
   flex-direction: column;
@@ -19,47 +19,78 @@
   align-items: center;
   justify-content: center;
 }
-.loginForm h2{
+
+.loginForm h2 {
   color: white;
 }
-.inputContainer{
+
+.inputContainer {
   display: flex;
   flex-direction: column;
   gap: 6px;
   width: 100%;
 }
-.loginForm input, .loginForm button{
+
+.loginForm input,
+.loginForm button {
   color: white;
   width: 100%;
 }
-.loginForm input{
+
+.loginForm input {
   background-color: #232323;
 }
-.loginForm input:focus{
+
+.loginForm input:focus {
   outline: none;
   border: solid 1px #963AFF45;
 }
-.loginInput{
+
+.loginInput {
   padding: 12px;
   border-radius: 8px;
   background-color: #232323;
   border: solid 1px #414141;
   width: 100%;
 }
-.loginSubmit{
+
+.loginSubmit {
   padding: 12px;
   border-radius: 8px;
   background-color: #963AFF;
   border: solid 1px #963AFF40;
   width: 100%;
 }
-.formIcon{
+
+.formIcon {
   background-color: #963AFF25;
-  padding:16px;
+  padding: 16px;
   width: 60px;
   height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+}
+
+.registerLink {
+  text-align: center;
+  margin-top: 16px;
+  color: #888;
+  font-size: 14px;
+}
+
+.registerLink button {
+  color: #963AFF;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: all 0.2s;
+  padding: 0 4px;
+}
+
+.registerLink button:hover {
+  color: #a656ff;
 }
