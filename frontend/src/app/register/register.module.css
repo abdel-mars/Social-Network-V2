@@ -4,9 +4,7 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  background: linear-gradient(135deg, #c8d8f8 0%, #dce4f8 25%, #e8d5f5 60%, #f5dde8 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 10s ease infinite;
+  background: var(--bg);
   position: relative;
   overflow: hidden;
 }
@@ -16,27 +14,21 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(91,124,246,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 20%, var(--accent-bg) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 80%, rgba(155,89,182,0.10) 0%, transparent 60%);
   pointer-events: none;
 }
 
-@keyframes gradientShift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
 .registerCard {
-  background: rgba(255,255,255,0.92);
+  background: var(--surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.6);
+  border: 1px solid var(--border);
   border-radius: 28px;
   padding: 40px 36px;
   width: 100%;
   max-width: 560px;
-  box-shadow: 0 8px 40px rgba(91,124,246,0.15), 0 2px 12px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -73,21 +65,21 @@
 .logoTitle {
   font-size: 20px;
   font-weight: 800;
-  color: #1e2340;
+  color: var(--text);
   letter-spacing: -0.02em;
 }
 
 .heading {
   font-size: 18px;
   font-weight: 700;
-  color: #1e2340;
+  color: var(--text);
   margin-top: 4px;
   text-align: center;
 }
 
 .subheading {
   font-size: 13px;
-  color: #8a90ab;
+  color: var(--text-muted);
   text-align: center;
 }
 
@@ -116,7 +108,7 @@
 .label {
   font-size: 12px;
   font-weight: 700;
-  color: #4a5278;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -125,7 +117,8 @@
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
-  color: #aab0c5;
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 
 .input,
@@ -133,13 +126,13 @@
   width: 100%;
   padding: 11px 14px;
   border-radius: 12px;
-  border: 1.5px solid #d0d8ea;
-  background: #f4f6fb;
-  color: #1e2340;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
   font-family: 'Nunito', sans-serif;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: var(--transition);
 }
 
 .textarea {
@@ -149,13 +142,14 @@
 
 .input:focus,
 .textarea:focus {
-  border-color: var(--accent, #5b7cf6);
-  box-shadow: 0 0 0 3px rgba(91,124,246,0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg-strong);
 }
 
 .input::placeholder,
 .textarea::placeholder {
-  color: #c0c6d6;
+  color: var(--text-muted);
+  opacity: 0.5;
 }
 
 /* File upload */
@@ -169,13 +163,13 @@
   gap: 8px;
   padding: 11px 14px;
   border-radius: 12px;
-  border: 1.5px dashed #d0d8ea;
-  background: #f4f6fb;
-  color: #8a90ab;
+  border: 1.5px dashed var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition: var(--transition);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -213,7 +207,7 @@
 .switchText {
   margin-top: 14px;
   font-size: 13px;
-  color: #8a90ab;
+  color: var(--text-muted);
   text-align: center;
 }
 

@@ -75,6 +75,7 @@
   border-radius: var(--radius-md);
   max-height: 360px;
   object-fit: cover;
+  cursor: zoom-in;
 }
 
 /* Footer */
@@ -82,21 +83,23 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 
 .commentBtn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 7px 14px;
+  flex: 1;
+  padding: 10px 14px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   transition: all var(--transition);
 }

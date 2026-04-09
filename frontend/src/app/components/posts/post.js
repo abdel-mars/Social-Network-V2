@@ -7,11 +7,13 @@ import { useReactions } from "../../hooks/useReactions";
 import { PostModel } from "../postpoup/postcontent";
 import { useState, useEffect } from "react";
 import { MessageSquare } from "lucide-react";
+import { ImagePreview } from "../ui/ImagePreview";
 
 export function RenderPosts({ post, setPosts }) {
   const [selectedPost, setSelectedPost] = useState(null);
   const [newComment, setNewcomment] = useState("");
   const [comments, setComments] = useState([]);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const { handleReaction } = useReactions({
     setPosts,
@@ -67,7 +69,10 @@ export function RenderPosts({ post, setPosts }) {
             src={`http://localhost:8080/${post.image_path}`}
             alt="Post"
             className={styles.postImage}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPreviewImage(`http://localhost:8080/${post.image_path}`);
+            }}
           />
         )}
 
@@ -94,6 +99,14 @@ export function RenderPosts({ post, setPosts }) {
           newComment={newComment}
           setNewComment={setNewcomment}
           handleReaction={handleReaction}
+        />
+      )}
+
+      {/* Fullscreen Image Preview */}
+      {previewImage && (
+        <ImagePreview 
+          src={previewImage} 
+          onClose={() => setPreviewImage(null)} 
         />
       )}
     </>

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PenSquare, Users } from "lucide-react";
+import Toast from "../components/ui/Toast";
 import style from "./page.module.css";
 import { RenderPosts } from "../components/posts/post";
 import { Renderbar } from "../components/bar/bar";
@@ -15,6 +17,17 @@ export default function Home() {
   const [newContent, setNewContent] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageFile, setImageFile] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (searchParams.get("login") === "success") {
+      setToast({ message: "Login successful!", type: "success" });
+      router.replace("/home"); // clear query param smoothly
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     async function fetchPosts() {
@@ -67,6 +80,14 @@ export default function Home() {
 
   return (
     <div className={style.pageRoot}>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+      
       <Renderbar />
 
       <div className={style.pageContent}>

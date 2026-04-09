@@ -2,6 +2,8 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { timeAgo } from "../../lib/time";
 import { ReactionButtons } from "../reactions/ReactionButtons";
+import { ImagePreview } from "../ui/ImagePreview";
+import { useState } from "react";
 import styles from "./postcontent.module.css";
 
 export function PostModel({
@@ -12,6 +14,8 @@ export function PostModel({
   setNewComment,
   handleReaction,
 }) {
+  const [previewImage, setPreviewImage] = useState(null);
+
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost) return;
 
@@ -74,6 +78,8 @@ export function PostModel({
               src={`http://localhost:8080/${selectedPost.image_path}`}
               alt="Post"
               className={styles.image}
+              onClick={() => setPreviewImage(`http://localhost:8080/${selectedPost.image_path}`)}
+              style={{ cursor: "zoom-in" }}
             />
           )}
 
@@ -125,6 +131,14 @@ export function PostModel({
             </button>
           </div>
         </div>
+
+        {/* Fullscreen Image Preview */}
+        {previewImage && (
+          <ImagePreview 
+            src={previewImage} 
+            onClose={() => setPreviewImage(null)} 
+          />
+        )}
       </div>
     </div>,
     document.body

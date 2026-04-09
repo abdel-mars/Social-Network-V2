@@ -58,11 +58,8 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setNotification({ message: "Login successful!", type: "success" });
         localStorage.setItem("userId", data.user_id);
-        setTimeout(() => {
-          router.push("/home");
-        }, 1000);
+        router.push("/home?login=success");
       } else {
         setNotification({ message: data.message || "Login failed", type: "error" });
       }
