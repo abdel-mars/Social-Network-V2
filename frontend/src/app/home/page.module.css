@@ -1,42 +1,146 @@
-.homeMain {
-    padding: 16px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+.pageRoot {
+  padding-top: var(--topbar-height);
+  min-height: 100svh;
+  background: var(--bg);
 }
 
-.homeContainer {
-    background-color: #141414;
-    min-height: 100svh;
-    display: flex;
+.pageContent {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
 }
 
-.homeHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #41414199;
-    background-color: #1B1B1B;
+/* Feed */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.homeHeader h1 {
-    color: white;
-    font-weight: 400;
-    font-size: 22px;
-}
-.postsFeed{
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+/* Create prompt */
+.createPrompt {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: box-shadow var(--transition), border-color var(--transition);
 }
 
-.createPostButton {
-    padding: 12px;
-    border-radius: 8px;
-    background-color: #963AFF;
-    border: solid 1px #963AFF40;
-    color: white;
+.createPrompt:hover {
+  border-color: var(--accent-light);
+  box-shadow: var(--shadow-md);
+}
+
+.promptAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  border: 2px solid var(--accent-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.promptText {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.promptBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.promptBtn:hover {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+/* Quick actions */
+.quickActions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Posts feed */
+.postsFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.emptyFeed {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+/* Right panel */
+.rightPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: calc(var(--topbar-height) + 20px);
+}
+
+.rightCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.rightCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .pageContent {
+    grid-template-columns: 1fr;
+  }
+  .rightPanel {
+    position: static;
+    display: none;
+  }
 }

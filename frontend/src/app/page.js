@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LogIn } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Toast from "./components/ui/Toast";
 import styles from "./page.module.css";
@@ -77,7 +76,7 @@ export default function LoginPage() {
   if (loading) {
     return (
       <div className={styles.loginContainer}>
-        <p style={{ color: "white" }}>Checking session...</p>
+        <div className={styles.loadingSpinner} />
       </div>
     );
   }
@@ -92,53 +91,75 @@ export default function LoginPage() {
             onClose={() => setNotification(null)}
           />
         )}
-        <form onSubmit={handleLogin} className={styles.loginForm}>
-          <div className={styles.formIcon}>
-            <LogIn color="#963AFF" />
-          </div>
-          <h2>Welcome Back</h2>
-          <p>Sign in to your 01Social account</p>
-          <div className={styles.inputContainer}>
-            <label htmlFor="username">Username or Email</label>
-            <input
-              id="username"
-              className={styles.loginInput}
-              name="username"
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-          <div className={styles.inputContainer}>
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              className={styles.loginInput}
-              name="password"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+
+        {/* Floating tile card */}
+        <div className={styles.loginCard}>
+          {/* Logo */}
+          <div className={styles.cardLogo}>
+            <div className={styles.logoRing}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15"/>
+                <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35"/>
+                <circle cx="12" cy="12" r="3" fill="currentColor"/>
+              </svg>
+            </div>
+            <h1 className={styles.logoTitle}>01Social</h1>
           </div>
 
-          <button type="submit" className={styles.loginSubmit} disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </button>
+          <h2 className={styles.heading}>Welcome back!</h2>
+          <p className={styles.subheading}>Sign in to your account</p>
 
-          <p className={styles.registerLink}>
+          <form onSubmit={handleLogin} className={styles.form}>
+            <div className={styles.field}>
+              <label htmlFor="username" className={styles.label}>Username or Email</label>
+              <input
+                id="username"
+                className={styles.input}
+                name="username"
+                type="text"
+                placeholder="your_username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="password" className={styles.label}>Password</label>
+              <input
+                id="password"
+                className={styles.input}
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button
+              id="login-submit-btn"
+              type="submit"
+              className={styles.submitBtn}
+              disabled={loading}
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+
+          <p className={styles.switchText}>
             Don't have an account?{" "}
             <button
+              id="go-register-btn"
               type="button"
+              className={styles.switchLink}
               onClick={() => router.push("/register")}
             >
               Create one
             </button>
           </p>
-        </form>
+        </div>
       </main>
     );
   }

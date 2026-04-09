@@ -1,0 +1,40 @@
+.reactionRow {
+  display: flex;
+  gap: 8px;
+}
+
+.reactionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: 'Nunito', sans-serif;
+}
+
+.reactionBtn:hover {
+  border-color: var(--accent-light);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(91,124,246,0.25);
+}
+
+.activeDislike {
+  background: #f05454 !important;
+  border-color: #f05454 !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(240,84,84,0.25);
+}

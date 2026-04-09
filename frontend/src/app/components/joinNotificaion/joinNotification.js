@@ -1,12 +1,13 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
+import styles from "../followNotification/notification.module.css";
+import { Check, X } from "lucide-react";
 
 export default function JoinRequest({ request }) {
-  const [status, setStatus] = useState(request.state) // <<====>> \\ !!
+  const [status, setStatus] = useState(request.state);
 
   const handlestate = async (newStatus) => {
-    console.log("Triggered status:", newStatus)
     try {
       const res = await fetch(`http://localhost:8080/accept-reject-join`, {
         method: "POST",
@@ -17,46 +18,46 @@ export default function JoinRequest({ request }) {
           user_id: request.sender.id,
           state: newStatus,
         }),
-      })
-      if (!res.ok) throw new Error("Failed to update status")
-      const r = await res.json()
-      console.log("Response from backend:", r)
-      setStatus(r.state) 
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      const r = await res.json();
+      setStatus(r.state);
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-  }
+  };
 
   return (
-    <div className="border p-3 rounded-lg flex justify-between items-center mb-2">
-      <p>
-        <strong>{request.sender.first_name}</strong> wants to join <strong>{request.group_title}</strong>
-      </p>
+    <div className={styles.notifItem}>
+      <img
+        className={styles.avatar}
+        src={request.sender.avatar ? `http://localhost:8080/${request.sender.avatar}` : "/default-avatar.png"}
+        alt={request.sender.first_name}
+        onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
+      />
       
-      {}
-      {status === "unread" ? (
-        <div className="flex gap-2">
-          <button
-            className="bg-green-500 text-white px-3 py-1 rounded"
-            onClick={() => handlestate("accept")}
-          >
-            Accept
-          </button>
-          <button
-            className="bg-red-500 text-white px-3 py-1 rounded"
-            onClick={() => handlestate("reject")}
-          >
-            Reject
-          </button>
+      <div className={styles.content}>
+        <div className={styles.textLine}>
+          <span className={styles.username}>@{request.sender.username}</span> wants to join <strong>{request.group_title}</strong>
         </div>
-      ) : (
-        <span className={`px-3 py-1 rounded ${
-          status === "accept" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-        }`}>
-          Request {status}
-        </span>
-      )}
-    </div>
-  )
-}
 
+        {status === "unread" ? (
+          <div className={styles.actions}>
+            <button className={`${styles.actionBtn} ${styles.accept}`} onClick={() => handlestate("accept")}>
+              <Check size={14} /> Accept
+            </button>
+            <button className={`${styles.actionBtn} ${styles.reject}`} onClick={() => handlestate("reject")}>
+              <X size={14} /> Reject
+            </button>
+          </div>
+        ) : (
+          <div className={styles.actions}>
+             <span className={styles.statusLabel}>
+               {status === "accept" ? "Accepted" : "Rejected"}
+             </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

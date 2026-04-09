@@ -1,23 +1,25 @@
-import { Archivo } from 'next/font/google';
+import { Nunito } from 'next/font/google';
 import "./globals.css";
+import Providers from "./Providers";
 
-const archivo = Archivo({
+const nunito = Nunito({
   subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-archivo',
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-nunito',
 });
 
 export const metadata = {
-  title: "Social Network",
-  description: "A clean and minimal social network app",
+  title: "01Social",
+  description: "A social network with a WiiU-inspired aesthetic",
 };
 
-// layout.js
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={archivo.variable}>
-        {children}
+      <body className={nunito.variable}>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

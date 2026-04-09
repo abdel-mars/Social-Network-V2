@@ -1,0 +1,79 @@
+.followBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+  border: 1px solid var(--accent);
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 2px 6px rgba(91,124,246,0.3);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.followBtn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.followBtn.pending {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border-color: var(--border);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.followBtn.following {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.followBtn.following:hover {
+  background: rgba(240,84,84,0.08);
+  color: #f05454;
+  border-color: rgba(240,84,84,0.3);
+}
+
+.label {
+  display: inline-block;
+}
+
+@media (max-width: 400px) {
+  .label {
+    display: none;
+  }
+  .followBtn {
+    min-width: 32px;
+    padding: 6px;
+  }
+}
+
+.loader {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.followBtn.pending .loader,
+.followBtn.following .loader {
+  border: 2px solid var(--border);
+  border-top-color: var(--text-muted);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

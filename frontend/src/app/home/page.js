@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { PenSquare, Users } from "lucide-react";
 import style from "./page.module.css";
 import { RenderPosts } from "../components/posts/post";
 import { Renderbar } from "../components/bar/bar";
 import { Renderformpost } from "../components/createpost/Createpost";
 import UsersList from "../components/usersuggestion/users_seg";
-import { CreateGroupModal } from "../components/createGroup/createGroup";
- 
+import FriendsList from "../components/friendlist/friendlist";
 
 export default function Home() {
-
   const [posts, setPosts] = useState([]);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
@@ -25,11 +24,6 @@ export default function Home() {
         });
         if (res.ok) {
           const data = await res.json();
-          console.log("Im... At... The... Get... Posts");
-          console.log("------------------------------------------------------");
-          console.log(data);
-          console.log("------------------------------------------------------");
-
           setPosts(data);
         }
       } catch (err) {
@@ -38,17 +32,15 @@ export default function Home() {
     }
     fetchPosts();
   }, []);
+
   const handleCreatePost = async (e) => {
     e.preventDefault();
-
     if (!newTitle.trim() || !newContent.trim()) return;
 
     const formData = new FormData();
     formData.append("title", newTitle);
     formData.append("content", newContent);
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
+    if (imageFile) formData.append("image", imageFile);
 
     try {
       const res = await fetch("http://localhost:8080/Createpost", {
@@ -63,9 +55,6 @@ export default function Home() {
         return;
       }
       const data = await res.json();
-      console.log("Hello  Im her from when i added newpost");
-      // ====>
-      console.log(data);
       setPosts([data, ...posts]);
       setNewTitle("");
       setNewContent("");
@@ -77,58 +66,69 @@ export default function Home() {
   };
 
   return (
-    <div className={style.homeContainer}>
-      {/* Left Sidebar*/}
-      <Renderbar/>
-      {/* Main Feed */}
-      <main className={style.homeMain}>
-        <header className={style.homeHeader}>
-          <h1>Welcome to 01Social!</h1>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className={style.createPostButton}
-          >
-            Create Post
-          </button>
-          <CreateGroupModal/>
-        </header>
-        {/* Button to open modal */}
-        {/* Create Post Modal */}
+    <div className={style.pageRoot}>
+      <Renderbar />
 
-        {isModalOpen && (
-          <Renderformpost
-            newTitle={newTitle}
-            setNewTitle={setNewTitle}
-            newContent={newContent}
-            setNewContent={setNewContent}
-            handleCreatePost={handleCreatePost}
-            onClose={() => setIsModalOpen(false)}
-            imageFile={imageFile}
-            setImageFile={setImageFile}
-          />
-        )}
-        {/* Posts List */}
-        <section className={style.postsFeed}>
-          {posts.map((post) => (
-            <RenderPosts
-              key={post.id}
-              post={post}
-              setPosts={setPosts}
-            />
-          ))}
-        </section>
-        {/*<--||-->*/}
-        
-      </main>
-      {/* Right Sidebar */}
-      <aside>
-        <UsersList></UsersList>
-      </aside>
-      {/*Here I Will Test Notification Panel <!!!> */}
-      {/* <NotificationPanel
-        notifications={notifications}
-        setNotifications={setNotifications}
-      ></NotificationPanel> */}
+      <div className={style.pageContent}>
+        {/* Main feed */}
+        <main className={style.feed}>
+          {/* Create post prompt */}
+          <div className={style.createPrompt} onClick={() => setIsModalOpen(true)}>
+            <div className={style.promptAvatar}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div className={style.promptText}>What's on your mind?</div>
+            <button id="create-post-btn" className={style.promptBtn}>
+              <PenSquare size={15} />
+              Post
+            </button>
+          </div>
+
+          {/* Post list */}
+          <section className={style.postsFeed}>
+            {posts.length === 0 ? (
+              <div className={style.emptyFeed}>
+                <p>No posts yet. Be the first to share something!</p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <RenderPosts key={post.id} post={post} setPosts={setPosts} />
+              ))
+            )}
+          </section>
+        </main>
+
+        {/* Right panel */}
+        <aside className={style.rightPanel}>
+          <div className={style.rightCard}>
+            <h3 className={style.rightCardTitle}>
+              <Users size={16} />
+              Suggested Friends
+            </h3>
+            <UsersList />
+          </div>
+          <div className={style.rightCard}>
+            <FriendsList />
+          </div>
+        </aside>
+      </div>
+
+      {/* Create post modal */}
+      {isModalOpen && (
+        <Renderformpost
+          newTitle={newTitle}
+          setNewTitle={setNewTitle}
+          newContent={newContent}
+          setNewContent={setNewContent}
+          handleCreatePost={handleCreatePost}
+          onClose={() => setIsModalOpen(false)}
+          imageFile={imageFile}
+          setImageFile={setImageFile}
+        />
+      )}
     </div>
   );
 }

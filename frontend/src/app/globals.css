@@ -1,21 +1,232 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap');
 
-*{
+/* ===========================
+   DESIGN TOKENS — LIGHT THEME
+   =========================== */
+:root {
+  /* Accent — user-configurable */
+  --accent: #5b7cf6;
+  --accent-light: #8da3f8;
+  --accent-dark: #3a5ce5;
+  --accent-bg: rgba(91, 124, 246, 0.10);
+  --accent-bg-strong: rgba(91, 124, 246, 0.18);
+
+  /* Backgrounds */
+  --bg: #e8eef6;
+  --bg-secondary: #dde4ef;
+  --surface: #ffffff;
+  --surface-2: #f4f6fb;
+  --surface-3: #edf0f7;
+
+  /* Text */
+  --text-primary: #1e2340;
+  --text-secondary: #4a5278;
+  --text-muted: #8a90ab;
+  --text-inverse: #ffffff;
+
+  /* Borders */
+  --border: #d0d8ea;
+  --border-strong: #b8c4d8;
+
+  /* Status colours */
+  --success: #33c97a;
+  --error: #f05454;
+  --warning: #f7b731;
+  --online: #2ecc71;
+  --offline: #aaaaaa;
+
+  /* Shadow */
+  --shadow-sm: 0 2px 8px rgba(30,35,64,0.07);
+  --shadow-md: 0 4px 18px rgba(30,35,64,0.10);
+  --shadow-lg: 0 8px 32px rgba(30,35,64,0.14);
+  --shadow-card: 0 2px 12px rgba(30,35,64,0.08);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* Navbar */
+  --topbar-height: 64px;
+  --topbar-bg: rgba(255,255,255,0.80);
+  --topbar-border: rgba(208,216,234,0.6);
+
+  /* Transition */
+  --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ===========================
+   DARK THEME OVERRIDES
+   =========================== */
+[data-theme="dark"] {
+  --bg: #12141c;
+  --bg-secondary: #191c27;
+  --surface: #1e2132;
+  --surface-2: #252840;
+  --surface-3: #2d3050;
+
+  --text-primary: #e8eaf4;
+  --text-secondary: #9da3c2;
+  --text-muted: #5a6080;
+
+  --border: #2e3352;
+  --border-strong: #404670;
+
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 18px rgba(0,0,0,0.35);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.45);
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.28);
+
+  --topbar-bg: rgba(30,33,50,0.88);
+  --topbar-border: rgba(46,51,82,0.7);
+}
+
+/* ===========================
+   BASE RESET
+   =========================== */
+*, *::before, *::after {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Archivo', sans-serif;
-  font-weight: 300;
+html {
+  scroll-behavior: smooth;
 }
 
-/* input autofill set to match theme transition is to prevent flashing white color */
+body {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 400;
+  background-color: var(--bg);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100svh;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+button {
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ===========================
+   SCROLLBAR
+   =========================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-light);
+}
+
+/* ===========================
+   AUTOFILL FIX
+   =========================== */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-    box-shadow: 0 0 0px 1000px #232323 inset;
-    -webkit-text-fill-color: #ddd;
-    transition: background-color 5000s ease-in-out;
+  box-shadow: 0 0 0px 1000px var(--surface-2) inset;
+  -webkit-text-fill-color: var(--text-primary);
+  transition: background-color 5000s ease-in-out;
+}
+
+/* ===========================
+   UTILITY CLASSES
+   =========================== */
+.wiiu-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  transition: box-shadow var(--transition);
+}
+
+.wiiu-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.wiiu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all var(--transition);
+  cursor: pointer;
+  border: none;
+}
+
+.wiiu-btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.wiiu-btn-primary:hover {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(91,124,246,0.3);
+}
+
+.wiiu-btn-ghost {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.wiiu-btn-ghost:hover {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-light);
+}
+
+.wiiu-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+
+.wiiu-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.wiiu-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Page wrapper (below topbar) */
+.page-root {
+  padding-top: var(--topbar-height);
+  min-height: 100svh;
 }

@@ -1,67 +1,45 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Send, Smile } from "lucide-react";
+import { useState } from "react";
+import { Send } from "lucide-react";
 import style from "./chat.module.css";
 
-const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "😮", "😢", "😡", "👍", "🔥", "❤️", "✨"];
-
 export default function ChatInput({ onSend }) {
-    const [text, setText] = useState("");
-    const [showEmojis, setShowEmojis] = useState(false);
+  const [content, setContent] = useState("");
 
-    const handleSend = (e) => {
-        e?.preventDefault();
-        if (text.trim()) {
-            onSend(text);
-            setText("");
-            setShowEmojis(false);
-        }
-    };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const txt = content.trim();
+    if (txt) {
+      onSend(txt);
+      setContent("");
+    }
+  };
 
-    const addEmoji = (emoji) => {
-        setText((prev) => prev + emoji);
-    };
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
 
-    return (
-        <div className={style.inputArea}>
-            <form onSubmit={handleSend} className={style.inputForm}>
-                <div className={style.emojiContainer}>
-                    <button
-                        type="button"
-                        className={style.emojiBtn}
-                        onClick={() => setShowEmojis(!showEmojis)}
-                    >
-                        <Smile size={24} />
-                    </button>
-
-                    {showEmojis && (
-                        <div className={style.emojiPicker}>
-                            {EMOJIS.map((e) => (
-                                <button
-                                    key={e}
-                                    type="button"
-                                    onClick={() => addEmoji(e)}
-                                >
-                                    {e}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="Type a message..."
-                    className={style.textInput}
-                />
-
-                <button type="submit" className={style.sendBtn} disabled={!text.trim()}>
-                    <Send size={20} />
-                </button>
-            </form>
-        </div>
-    );
+  return (
+    <form className={style.inputForm} onSubmit={handleSubmit}>
+      <input
+        type="text"
+        className={style.textField}
+        placeholder="Type a message..."
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        onKeyDown={handleKeyDown}
+      />
+      <button 
+        type="submit" 
+        className={style.sendBtn}
+        disabled={!content.trim()}
+      >
+        <Send size={18} strokeWidth={2.2} />
+      </button>
+    </form>
+  );
 }

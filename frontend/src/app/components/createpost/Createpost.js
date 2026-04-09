@@ -1,80 +1,80 @@
-"use client"
+"use client";
+
+import { X, Image } from "lucide-react";
+import styles from "./Createpost.module.css";
 
 export function Renderformpost({
-    newTitle,
-    setNewTitle,
-    newContent,
-    setNewContent,
-    handleCreatePost,
-    onClose,
-    imageFile,
-    setImageFile
-  }) {
-    return (
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: 1000,
-        }}
-      >
-        <div style={{ background: "#fff", padding: "20px", borderRadius: "8px", width: "400px" }}>
-          <h2>Create Post</h2>
-          <form onSubmit={handleCreatePost}>
-            <input
-              type="text"
-              placeholder="Title"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
-            />
-  
-            <textarea
-              placeholder="What's on your mind?"
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
-            />
-  
-            {/*IMAGE*/}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files[0])}
-              style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
-            />
-  
-            {/**/}
-            {imageFile && (
-              <img
-                src={URL.createObjectURL(imageFile)}
-                alt="Preview"
-                style={{ width: "100%", borderRadius: "8px", marginBottom: "10px" }}
-              />
-            )}
-  
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <button type="submit" style={{ padding: "10px 20px" }}>
-                Post
-              </button>
-              <button
-                type="button"
-                style={{ padding: "10px 20px", background: "#ccc" }}
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+  newTitle,
+  setNewTitle,
+  newContent,
+  setNewContent,
+  handleCreatePost,
+  onClose,
+  imageFile,
+  setImageFile,
+}) {
+  return (
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>Create Post</h2>
+          <button id="close-post-modal-btn" className={styles.closeBtn} onClick={onClose}>
+            <X size={18} />
+          </button>
         </div>
+
+        <form onSubmit={handleCreatePost} className={styles.form}>
+          <input
+            type="text"
+            id="post-title-input"
+            placeholder="Title"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            className={styles.input}
+            required
+          />
+
+          <textarea
+            id="post-content-input"
+            placeholder="What's on your mind?"
+            value={newContent}
+            onChange={(e) => setNewContent(e.target.value)}
+            className={styles.textarea}
+            required
+          />
+
+          {/* Image upload */}
+          <label className={styles.imageLabel} htmlFor="post-image-input">
+            <Image size={16} />
+            {imageFile ? imageFile.name : "Attach an image (optional)"}
+          </label>
+          <input
+            id="post-image-input"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImageFile(e.target.files[0])}
+            className={styles.imageInput}
+          />
+
+          {imageFile && (
+            <img
+              src={URL.createObjectURL(imageFile)}
+              alt="Preview"
+              className={styles.preview}
+            />
+          )}
+
+          <div className={styles.actions}>
+            <button id="cancel-post-btn" type="button" className={styles.cancelBtn} onClick={onClose}>
+              Cancel
+            </button>
+            <button id="submit-post-btn" type="submit" className={styles.submitBtn}>
+              Publish Post
+            </button>
+          </div>
+        </form>
       </div>
-    );
-  }
-  
+    </div>
+  );
+}
