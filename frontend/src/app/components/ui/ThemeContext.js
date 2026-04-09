@@ -85,11 +85,13 @@ const ThemeContext = createContext({
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState("light");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("theme") || "light";
     setTheme(saved);
     document.documentElement.setAttribute("data-theme", saved);
+    setMounted(true);
   }, []);
 
   const toggleTheme = () => {
@@ -98,6 +100,29 @@ export function ThemeProvider({ children }) {
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("theme", next);
   };
+
+  if (!mounted) {
+    return (
+      <div style={{
+        height: "100vh", 
+        display: "flex", 
+        flexDirection: "column",
+        alignItems: "center", 
+        justifyContent: "center",
+        backgroundColor: "#12141c" // Sleek dark console startup screen
+      }}>
+        <div style={{
+          width: "40px", 
+          height: "40px", 
+          border: "4px solid rgba(255,255,255,0.05)",
+          borderTopColor: "#5b7cf6", 
+          borderRadius: "50%",
+          animation: "spin 0.8s linear infinite"
+        }} />
+        <style>{"@keyframes spin { to { transform: rotate(360deg); } }"}</style>
+      </div>
+    );
+  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

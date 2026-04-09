@@ -230,3 +230,25 @@ input:-webkit-autofill:focus {
   padding-top: var(--topbar-height);
   min-height: 100svh;
 }
+
+/* ===========================
+   GLOBAL ANIMATIONS
+   =========================== */
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Apply smooth fade entry to top-level layout sections */
+div[class*="pageContent"],
+div[class*="pageRoot"] > main,
+.wiiu-card {
+  animation: pageFadeIn 0.3s ease-out both;
+}
+
+/* Prevent double animations for nested items */
+div[class*="pageContent"] .wiiu-card,
+div[class*="pageContent"] div[class*="card"],
+div[class*="pageContent"] form {
+  animation: none;
+}

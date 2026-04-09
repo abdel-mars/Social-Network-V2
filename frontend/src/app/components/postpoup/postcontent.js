@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { timeAgo } from "../../lib/time";
 import { ReactionButtons } from "../reactions/ReactionButtons";
@@ -35,7 +36,9 @@ export function PostModel({
     }
   };
 
-  return (
+  if (!selectedPost) return null;
+
+  return createPortal(
     <div className={styles.overlay} onClick={() => setSelectedPost(null)}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -45,7 +48,7 @@ export function PostModel({
               src={selectedPost.avatar ? `http://localhost:8080/${selectedPost.avatar}` : "/default-avatar.png"}
               alt="avatar"
               className={styles.avatar}
-              onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
+              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/default-avatar.png"; }}
             />
             <div>
               <div className={styles.authorName}>{selectedPost.full_name || selectedPost.user_name}</div>
@@ -89,7 +92,7 @@ export function PostModel({
           <h4 className={styles.commentsTitle}>Comments</h4>
 
           <div className={styles.commentsList}>
-            {comment && comment.length > 0 ? (
+            {Array.isArray(comment) && comment.length > 0 ? (
               comment.map((c) => (
                 <div key={c.id} className={styles.commentItem}>
                   <div className={styles.commentMeta}>
@@ -123,6 +126,7 @@ export function PostModel({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
