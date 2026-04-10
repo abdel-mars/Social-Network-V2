@@ -297,6 +297,8 @@
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-primary);
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .self .bubble {
@@ -343,6 +345,27 @@
 .inputForm:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.inputWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-width: 0;
+}
+
+.charCounter {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 0 10px;
+  font-weight: 700;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.maxReached {
+  color: #ef4444;
 }
 
 .textField {

@@ -59,14 +59,20 @@ export default function ChatInput({ onSend, onSendTyping }) {
 
   return (
     <form className={style.inputForm} onSubmit={handleSubmit}>
-      <input
-        type="text"
-        className={style.textField}
-        placeholder="Type a message..."
-        value={content}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-      />
+      <div className={style.inputWrapper}>
+        <input
+          type="text"
+          className={style.textField}
+          placeholder="Type a message..."
+          value={content}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          maxLength={300}
+        />
+        <span className={`${style.charCounter} ${content.length >= 300 ? style.maxReached : ""}`}>
+          {content.length}/300
+        </span>
+      </div>
       <button
         type="submit"
         className={style.sendBtn}
