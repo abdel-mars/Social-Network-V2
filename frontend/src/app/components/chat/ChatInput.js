@@ -1,13 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { Send, Smile } from "lucide-react";
+import dynamic from "next/dynamic";
 import style from "./chat.module.css";
+
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
+  ssr: false,
+});
 
 export default function ChatInput({ onSend, onSendTyping }) {
   const [content, setContent] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
+  const pickerRef = useRef(null);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -30,6 +37,12 @@ export default function ChatInput({ onSend, onSendTyping }) {
     }, 2000);
   };
 
+  const handleEmojiClick = (emojiData) => {
+    if (content.length + emojiData.emoji.length > 300) return;
+    setContent((prev) => prev + emojiData.emoji);
+    // Optional: focus back to input after emoji selection
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const txt = content.trim();
@@ -41,6 +54,7 @@ export default function ChatInput({ onSend, onSendTyping }) {
 
       onSend(txt);
       setContent("");
+      setShowEmojiPicker(false);
     }
   };
 
@@ -52,13 +66,42 @@ export default function ChatInput({ onSend, onSendTyping }) {
   };
 
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, []);
 
   return (
     <form className={style.inputForm} onSubmit={handleSubmit}>
+      <button
+        type="button"
+        className={style.emojiToggle}
+        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+      >
+        <Smile size={20} strokeWidth={2} />
+      </button>
+
+      {showEmojiPicker && (
+        <div className={style.emojiPickerContainer} ref={pickerRef}>
+          <EmojiPicker
+            onEmojiClick={handleEmojiClick}
+            autoFocusSearch={false}
+            theme="auto"
+            searchDisabled={false}
+            skinTonesDisabled
+            width={300}
+            height={400}
+          />
+        </div>
+      )}
+
       <div className={style.inputWrapper}>
         <input
           type="text"

@@ -13,7 +13,7 @@ const (
 	writeWait      = 10 * time.Second
 	pongWait       = 60 * time.Second
 	pingPeriod     = (pongWait * 9) / 10
-	maxMessageSize = 512
+	maxMessageSize = 2048
 )
 
 type Client struct {
@@ -67,9 +67,10 @@ func (c *Client) ReadPump() {
 			continue
 		}
 
-		// Enforce 300 character limit
-		if len(in.Content) > 300 {
-			in.Content = in.Content[:300]
+		// Enforce 300 character limit (using runaway count correctly for emojis)
+		runes := []rune(in.Content)
+		if len(runes) > 300 {
+			in.Content = string(runes[:300])
 		}
 
 		// Save to DB
