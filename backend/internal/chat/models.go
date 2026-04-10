@@ -24,6 +24,7 @@ type UserStatus struct {
 }
 
 type IncomingMessage struct {
+	Type        string `json:"type"` // "chat" or "typing"
 	RecipientID int    `json:"recipient_id"`
 	Content     string `json:"content"`
 }
