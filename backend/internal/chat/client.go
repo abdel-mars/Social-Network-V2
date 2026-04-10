@@ -55,6 +55,18 @@ func (c *Client) ReadPump() {
 			continue
 		}
 
+		// Handle typing status
+		if in.Type == "typing" {
+			msg := Message{
+				Type:        "typing",
+				SenderID:    c.userID,
+				RecipientID: in.RecipientID,
+				Content:     in.Content, // "start" or "stop"
+			}
+			c.hub.broadcast <- msg
+			continue
+		}
+
 		// Save to DB
 		msg, err := SaveMessage(c.userID, in.RecipientID, in.Content)
 		if err != nil {
