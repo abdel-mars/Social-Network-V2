@@ -12,6 +12,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [showList, setShowList] = useState(true);
+  const [typingUsers, setTypingUsers] = useState({}); // { [userId]: boolean }
   const socketRef = useRef(null);
   const selectedConvRef = useRef(null);
 
@@ -36,6 +37,18 @@ export default function ChatPage() {
         setSelectedConversation((prev) =>
           prev && Number(prev.user_id) === targetId ? { ...prev, is_online } : prev
         );
+        if (!is_online) {
+          setTypingUsers((prev) => ({ ...prev, [targetId]: false }));
+        }
+        return;
+      }
+
+      if (data.type === "typing") {
+        const { sender_id, content } = data;
+        setTypingUsers((prev) => ({
+          ...prev,
+          [sender_id]: content === "start",
+        }));
         return;
       }
 
@@ -90,6 +103,18 @@ export default function ChatPage() {
     }
   };
 
+  const sendTypingStatus = (isTyping) => {
+    if (socketRef.current?.readyState === WebSocket.OPEN && selectedConversation) {
+      socketRef.current.send(
+        JSON.stringify({
+          type: "typing",
+          recipient_id: selectedConversation.user_id,
+          content: isTyping ? "start" : "stop",
+        })
+      );
+    }
+  };
+
   const handleSelectConversation = (conv) => {
     setSelectedConversation(conv);
     setShowList(false);
@@ -114,6 +139,8 @@ export default function ChatPage() {
               messages={messages}
               setMessages={setMessages}
               onSendMessage={sendMessage}
+              onSendTyping={sendTypingStatus}
+              isTyping={selectedConversation ? !!typingUsers[selectedConversation.user_id] : false}
               onBack={() => setShowList(true)}
             />
           </div>
