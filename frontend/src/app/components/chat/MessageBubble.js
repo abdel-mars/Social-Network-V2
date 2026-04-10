@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, CheckCheck } from "lucide-react";
 import style from "./chat.module.css";
 
 export default function MessageBubble({ message }) {
@@ -18,13 +19,28 @@ export default function MessageBubble({ message }) {
           />
         </div>
       )}
-      
+
       <div className={style.messageContent}>
         <div className={style.bubble}>
           <p>{message.content}</p>
         </div>
         <span className={style.msgTime}>
           {new Date(message.sent_at).toLocaleString([], { hour: '2-digit', minute: '2-digit' })}
+          {isSelf && (
+            message.is_read ? (
+              <CheckCheck
+                size={14}
+                className={style.seenIcon}
+                style={{ marginLeft: '4px', display: 'inline-block', verticalAlign: 'middle' }}
+              />
+            ) : (
+              <Check
+                size={14}
+                className={style.unseenIcon}
+                style={{ marginLeft: '4px', display: 'inline-block', verticalAlign: 'middle' }}
+              />
+            )
+          )}
         </span>
       </div>
     </div>

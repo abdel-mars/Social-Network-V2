@@ -4,29 +4,29 @@ import { useState, useEffect, useRef } from "react";
 import { Renderbar } from "../components/bar/bar";
 import ConversationList from "../components/chat/ConversationList";
 import ChatWindow from "../components/chat/ChatWindow";
+import { useChat } from "../components/chat/ChatContext";
 import style from "./page.module.css";
 
 export default function ChatPage() {
   const [selectedConversation, setSelectedConversation] = useState(null);
-  const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [showList, setShowList] = useState(true);
-  const [typingUsers, setTypingUsers] = useState({}); // { [userId]: boolean }
-  const socketRef = useRef(null);
+  const [typingUsers, setTypingUsers] = useState({});
   const selectedConvRef = useRef(null);
+  const { socket, markAsRead } = useChat();
 
   useEffect(() => {
     selectedConvRef.current = selectedConversation;
-  }, [selectedConversation]);
+    if (selectedConversation) {
+      markAsRead(selectedConversation.user_id);
+    }
+  }, [selectedConversation, markAsRead]);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8080/ws/chat");
-    socketRef.current = ws;
+    if (!socket) return;
 
-    ws.onopen = () => console.log("[Chat] Connected to WebSocket");
-
-    ws.onmessage = (event) => {
+    const handleMessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "status") {
         const { user_id, is_online } = data.user_status;
@@ -52,6 +52,19 @@ export default function ChatPage() {
         return;
       }
 
+      if (data.type === "read_receipt") {
+        const companionId = Number(data.recipient_id); // the person who read my messages
+        const currentConv = selectedConvRef.current;
+        if (currentConv && Number(currentConv.user_id) === companionId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              Number(msg.recipient_id) === companionId ? { ...msg, is_read: true } : msg
+            )
+          );
+        }
+        return;
+      }
+
       const msg = data;
       setMessages((prev) => {
         const currentConv = selectedConvRef.current;
@@ -59,7 +72,10 @@ export default function ChatPage() {
           currentConv &&
           (msg.recipient_id === currentConv.user_id || msg.sender_id === currentConv.user_id)
         ) {
-          return [...prev, msg];
+          if (msg.sender_id === currentConv.user_id) {
+            markAsRead(msg.sender_id);
+          }
+          return [...prev, { ...msg, is_read: msg.is_read || false }];
         }
         return prev;
       });
@@ -82,19 +98,13 @@ export default function ChatPage() {
       });
     };
 
-    const handleUnload = () => ws.close();
-    window.addEventListener("beforeunload", handleUnload);
-    setSocket(ws);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleUnload);
-      ws.close();
-    };
-  }, []);
+    socket.addEventListener("message", handleMessage);
+    return () => socket.removeEventListener("message", handleMessage);
+  }, [socket]);
 
   const sendMessage = (content) => {
-    if (socketRef.current?.readyState === WebSocket.OPEN && selectedConversation) {
-      socketRef.current.send(
+    if (socket?.readyState === WebSocket.OPEN && selectedConversation) {
+      socket.send(
         JSON.stringify({
           recipient_id: selectedConversation.user_id,
           content: content,
@@ -104,8 +114,8 @@ export default function ChatPage() {
   };
 
   const sendTypingStatus = (isTyping) => {
-    if (socketRef.current?.readyState === WebSocket.OPEN && selectedConversation) {
-      socketRef.current.send(
+    if (socket?.readyState === WebSocket.OPEN && selectedConversation) {
+      socket.send(
         JSON.stringify({
           type: "typing",
           recipient_id: selectedConversation.user_id,

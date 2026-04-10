@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { timeAgo } from "../../lib/time";
 import { Search } from "lucide-react";
+import { useChat } from "./ChatContext";
 import style from "./chat.module.css";
 
 export default function ConversationList({ conversations, setConversations, onSelect, selectedId, typingUsers = {} }) {
   const [loading, setLoading] = useState(true);
+  const { unreadCounts } = useChat();
 
   useEffect(() => {
     async function fetchConversations() {
@@ -62,11 +64,18 @@ export default function ConversationList({ conversations, setConversations, onSe
                     {conv.last_sent_at ? timeAgo(conv.last_sent_at) : ""}
                   </span>
                 </div>
-                {typingUsers[conv.user_id] ? (
-                  <p className={style.typingText}>Typing...</p>
-                ) : (
-                  <p className={style.lastMsg}>{conv.last_message}</p>
-                )}
+                <div className={style.convRow}>
+                  {typingUsers[conv.user_id] ? (
+                    <p className={style.typingText}>Typing...</p>
+                  ) : (
+                    <p className={style.lastMsg}>{conv.last_message}</p>
+                  )}
+                  {unreadCounts[conv.user_id] > 0 && (
+                    <span className={style.notifBadge}>
+                      {unreadCounts[conv.user_id] > 9 ? "+9" : unreadCounts[conv.user_id]}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))

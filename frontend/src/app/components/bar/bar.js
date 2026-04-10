@@ -7,14 +7,16 @@ import {
   Bell, Menu, X, Sun, Moon
 } from "lucide-react";
 import { useTheme } from "../ui/ThemeContext";
+import { useChat } from "../chat/ChatContext";
 import AccentPicker from "../ui/AccentPicker";
 import { NotificationPanel } from "../notifications/notificationpanel";
 import style from "./bar.module.css";
+import chatStyle from "../chat/chat.module.css";
 
 const NAV_ITEMS = [
-  { label: "Home",    path: "/home",   icon: Home },
-  { label: "Chat",    path: "/chat",   icon: MessageCircle },
-  { label: "Groups",  path: "/groups", icon: Users },
+  { label: "Home", path: "/home", icon: Home },
+  { label: "Chat", path: "/chat", icon: MessageCircle },
+  { label: "Groups", path: "/groups", icon: Users },
 ];
 
 export function Renderbar() {
@@ -49,7 +51,7 @@ export function Renderbar() {
         method: "POST",
         credentials: "include",
       });
-    } catch (_) {}
+    } catch (_) { }
     localStorage.removeItem("userId");
     router.push("/");
   };
@@ -65,9 +67,9 @@ export function Renderbar() {
           <div className={style.logo} onClick={() => router.push("/home")}>
             <div className={style.logoIcon}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15"/>
-                <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35"/>
-                <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
+                <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35" />
+                <circle cx="12" cy="12" r="3" fill="currentColor" />
               </svg>
             </div>
             <span className={style.logoText}>01Social</span>
@@ -75,18 +77,28 @@ export function Renderbar() {
 
           {/* Center nav pill */}
           <nav className={style.navPill}>
-            {NAV_ITEMS.map(({ label, path, icon: Icon }) => (
-              <button
-                key={path}
-                id={`nav-${label.toLowerCase()}`}
-                className={`${style.navBtn} ${isActive(path) ? style.navBtnActive : ""}`}
-                onClick={() => router.push(path)}
-                title={label}
-              >
-                <Icon size={18} strokeWidth={2.2} />
-                <span className={style.navLabel}>{label}</span>
-              </button>
-            ))}
+            {NAV_ITEMS.map(({ label, path, icon: Icon }) => {
+              const { totalUnreadCount } = useChat();
+              return (
+                <button
+                  key={path}
+                  id={`nav-${label.toLowerCase()}`}
+                  className={`${style.navBtn} ${isActive(path) ? style.navBtnActive : ""}`}
+                  onClick={() => router.push(path)}
+                  title={label}
+                >
+                  <div className={chatStyle.headerBadgeWrapper}>
+                    <Icon size={18} strokeWidth={2.2} />
+                    {label === "Chat" && totalUnreadCount > 0 && (
+                      <span className={chatStyle.headerBadge}>
+                        {totalUnreadCount > 9 ? "+9" : totalUnreadCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className={style.navLabel}>{label}</span>
+                </button>
+              );
+            })}
           </nav>
 
           {/* Right controls */}
