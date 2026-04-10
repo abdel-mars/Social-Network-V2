@@ -131,6 +131,7 @@ export default function ChatPage() {
               setConversations={setConversations}
               onSelect={handleSelectConversation}
               selectedId={selectedConversation?.user_id}
+              typingUsers={typingUsers}
             />
           </div>
           <div className={`${style.windowWrapper} ${showList ? style.mobileHidden : ""}`}>

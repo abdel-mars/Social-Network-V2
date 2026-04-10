@@ -454,3 +454,24 @@
     transform: translateY(0);
   }
 }
+
+.typingText {
+  font-size: 13px;
+  color: #22c55e;
+  font-weight: 600;
+  margin: 0;
+  font-style: italic;
+  animation: typingPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes typingPulse {
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}

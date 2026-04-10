@@ -5,7 +5,7 @@ import { timeAgo } from "../../lib/time";
 import { Search } from "lucide-react";
 import style from "./chat.module.css";
 
-export default function ConversationList({ conversations, setConversations, onSelect, selectedId }) {
+export default function ConversationList({ conversations, setConversations, onSelect, selectedId, typingUsers = {} }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function ConversationList({ conversations, setConversations, onSe
       <div className={style.listHeader}>
         <h3 className={style.headerTitle}>Messages</h3>
       </div>
-      
+
       <div className={style.listItems}>
         {loading ? (
           <p className={style.empty}>Loading...</p>
@@ -54,7 +54,7 @@ export default function ConversationList({ conversations, setConversations, onSe
                 />
                 {conv.is_online && <div className={style.onlineBadge} />}
               </div>
-              
+
               <div className={style.convInfo}>
                 <div className={style.convRow}>
                   <span className={style.username}>{conv.username}</span>
@@ -62,7 +62,11 @@ export default function ConversationList({ conversations, setConversations, onSe
                     {conv.last_sent_at ? timeAgo(conv.last_sent_at) : ""}
                   </span>
                 </div>
-                <p className={style.lastMsg}>{conv.last_message}</p>
+                {typingUsers[conv.user_id] ? (
+                  <p className={style.typingText}>Typing...</p>
+                ) : (
+                  <p className={style.lastMsg}>{conv.last_message}</p>
+                )}
               </div>
             </div>
           ))
