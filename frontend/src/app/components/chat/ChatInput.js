@@ -9,6 +9,8 @@ const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
   ssr: false,
 });
 
+import { EmojiStyle } from "emoji-picker-react";
+
 export default function ChatInput({ onSend, onSendTyping }) {
   const [content, setContent] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -94,10 +96,12 @@ export default function ChatInput({ onSend, onSendTyping }) {
             onEmojiClick={handleEmojiClick}
             autoFocusSearch={false}
             theme="auto"
-            searchDisabled={false}
+            emojiStyle={EmojiStyle.GOOGLE}
+            searchDisabled={true}
             skinTonesDisabled
-            width={300}
-            height={400}
+            previewConfig={{ showPreview: false }}
+            width={280}
+            height={320}
           />
         </div>
       )}
