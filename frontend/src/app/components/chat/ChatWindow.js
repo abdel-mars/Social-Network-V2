@@ -6,7 +6,7 @@ import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import style from "./chat.module.css";
 
-export default function ChatWindow({ conversation, messages, setMessages, onSendMessage, onBack }) {
+export default function ChatWindow({ conversation, messages, setMessages, onSendMessage, onSendTyping, isTyping, onBack }) {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
 
@@ -33,9 +33,13 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      // Use a small timeout to ensure layout is updated before scrolling
+      const timer = setTimeout(() => {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [messages]);
+  }, [messages, isTyping]);
 
   if (!conversation) {
     return (
@@ -58,9 +62,9 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
           <ArrowLeft size={20} />
         </button>
         <div className={style.headerAvatarWrapper}>
-          <img 
-            src={conversation.avatar ? `http://localhost:8080/${conversation.avatar}` : "/default-avatar.png"} 
-            alt={conversation.username} 
+          <img
+            src={conversation.avatar ? `http://localhost:8080/${conversation.avatar}` : "/default-avatar.png"}
+            alt={conversation.username}
             className={style.headerAvatar}
             onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
           />
@@ -80,15 +84,24 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
         ) : messages.length === 0 ? (
           <div className={style.noMessages}>Say hi to initiate the conversation!</div>
         ) : (
-          messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))
+          <>
+            {messages.map((msg) => (
+              <MessageBubble key={msg.id} message={msg} />
+            ))}
+            {isTyping && (
+              <div className={style.typingStatus}>
+                <span className={style.typingDot}></span>
+                <span className={style.typingDot}></span>
+                <span className={style.typingDot}></span>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Input */}
       <div className={style.inputContainer}>
-        <ChatInput onSend={onSendMessage} />
+        <ChatInput onSend={onSendMessage} onSendTyping={onSendTyping} />
       </div>
     </div>
   );
