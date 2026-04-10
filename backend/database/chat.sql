@@ -5,10 +5,7 @@ CREATE TABLE IF NOT EXISTS messages (
     recipient_id INTEGER NOT NULL,
     content TEXT NOT NULL,
     sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_read BOOLEAN DEFAULT 0,
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
--- Index for faster conversation retrieval
-CREATE INDEX IF NOT EXISTS idx_messages_conversation 
-    ON messages(sender_id, recipient_id, sent_at);
