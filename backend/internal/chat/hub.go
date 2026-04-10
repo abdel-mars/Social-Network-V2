@@ -7,7 +7,7 @@ import (
 )
 
 type Hub struct {
-	clients    map[int]*Client
+	clients    map[int]map[*Client]bool // userID -> set of clients
 	broadcast  chan Message
 	register   chan *Client
 	unregister chan *Client
@@ -16,8 +16,8 @@ type Hub struct {
 
 func NewHub() *Hub {
 	return &Hub{
-		clients:    make(map[int]*Client),
-		broadcast:  make(chan Message, 256), // Buffer to avoid blocking
+		clients:    make(map[int]map[*Client]bool),
+		broadcast:  make(chan Message, 256),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 	}
@@ -28,48 +28,71 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.register:
 			h.mu.Lock()
-			h.clients[client.userID] = client
+			if h.clients[client.userID] == nil {
+				h.clients[client.userID] = make(map[*Client]bool)
+			}
+			h.clients[client.userID][client] = true
+			isFirst := len(h.clients[client.userID]) == 1
 			h.mu.Unlock()
-			fmt.Printf("[Chat] User %d connected\n", client.userID)
-			// Broadcast login
-			h.broadcastStatus(client.userID, true)
+
+			if isFirst {
+				fmt.Printf("[Chat] User %d connected\n", client.userID)
+				h.broadcastStatus(client.userID, true)
+			}
 
 		case client := <-h.unregister:
 			h.mu.Lock()
-			if _, ok := h.clients[client.userID]; ok {
-				delete(h.clients, client.userID)
-				close(client.send)
-				fmt.Printf("[Chat] User %d disconnected\n", client.userID)
+			if userClients, ok := h.clients[client.userID]; ok {
+				if _, exists := userClients[client]; exists {
+					delete(userClients, client)
+					close(client.send)
+					if len(userClients) == 0 {
+						delete(h.clients, client.userID)
+						h.mu.Unlock()
+						fmt.Printf("[Chat] User %d disconnected\n", client.userID)
+						h.broadcastStatus(client.userID, false)
+					} else {
+						h.mu.Unlock()
+					}
+				} else {
+					h.mu.Unlock()
+				}
+			} else {
+				h.mu.Unlock()
 			}
-			h.mu.Unlock()
-			// Broadcast logout
-			h.broadcastStatus(client.userID, false)
 
 		case message := <-h.broadcast:
 			data, _ := json.Marshal(message)
 			h.mu.RLock()
 
 			if message.Type == "status" {
-				// Global broadcast for status updates
-				for _, client := range h.clients {
-					select {
-					case client.send <- data:
-					default:
+				for _, userClients := range h.clients {
+					for client := range userClients {
+						select {
+						case client.send <- data:
+						default:
+						}
 					}
 				}
 			} else {
-				// Targeted message for chat
-				if recipient, ok := h.clients[message.RecipientID]; ok {
-					select {
-					case recipient.send <- data:
-					default:
+				// Send to all recipient's active sessions
+				if userClients, ok := h.clients[message.RecipientID]; ok {
+					for client := range userClients {
+						select {
+						case client.send <- data:
+						default:
+						}
 					}
 				}
-				// Also send back to sender for confirmation
-				if sender, ok := h.clients[message.SenderID]; ok {
-					select {
-					case sender.send <- data:
-					default:
+				// Also send back to all sender's sessions for sync
+				if message.SenderID != message.RecipientID {
+					if userClients, ok := h.clients[message.SenderID]; ok {
+						for client := range userClients {
+							select {
+							case client.send <- data:
+							default:
+							}
+						}
 					}
 				}
 			}
@@ -81,8 +104,7 @@ func (h *Hub) Run() {
 func (h *Hub) IsUserOnline(userID int) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	_, online := h.clients[userID]
-	return online
+	return len(h.clients[userID]) > 0
 }
 
 func (h *Hub) broadcastStatus(userID int, isOnline bool) {
@@ -96,6 +118,18 @@ func (h *Hub) broadcastStatus(userID int, isOnline bool) {
 			IsOnline: isOnline,
 		},
 	}
-	fmt.Printf("[Chat] Broadcasting status for user %d: online=%v\n", userID, isOnline)
 	h.broadcast <- msg
+}
+
+func (h *Hub) BroadcastToUser(userID int, data []byte) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	if userClients, ok := h.clients[userID]; ok {
+		for client := range userClients {
+			select {
+			case client.send <- data:
+			default:
+			}
+		}
+	}
 }

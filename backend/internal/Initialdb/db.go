@@ -23,6 +23,10 @@ func InitDB(datasource string) {
 	if err != nil {
 		log.Fatalf("Faile Create Table", err)
 	}
+
+	// Hot-fix/Migration: ensure is_read column exists in messages table
+	_, _ = repo.DB.Exec("ALTER TABLE messages ADD COLUMN is_read BOOLEAN DEFAULT 0")
+	_, _ = repo.DB.Exec("CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(recipient_id, is_read, sender_id)")
 }
 
 func CreateTable(db *sql.DB) error {

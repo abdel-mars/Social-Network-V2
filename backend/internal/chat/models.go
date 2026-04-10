@@ -11,6 +11,7 @@ type Message struct {
 	RecipientID int       `json:"recipient_id"`
 	Content     string    `json:"content"`
 	SentAt      time.Time `json:"sent_at"`
+	IsRead      bool      `json:"is_read"`
 	Sender      struct {
 		Username string  `json:"username"`
 		Avatar   *string `json:"avatar"`

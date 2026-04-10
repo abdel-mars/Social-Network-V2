@@ -89,3 +89,41 @@ func GetConversationsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(previews)
 }
+
+func MarkAsReadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := r.Context().Value(repo.UserIDKey).(int)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var data struct {
+		SenderID int `json:"sender_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := MarkAsRead(userID, data.SenderID); err != nil {
+		http.Error(w, "Failed to mark messages as read", http.StatusInternalServerError)
+		return
+	}
+
+	// Broadcast read receipt to both sender and recipient (for multi-tab sync)
+	receipt, _ := json.Marshal(map[string]interface{}{
+		"type":         "read_receipt",
+		"sender_id":    data.SenderID, // The person whose messages were read
+		"recipient_id": userID,        // The person who read them
+	})
+	ChatHub.BroadcastToUser(data.SenderID, receipt)
+	ChatHub.BroadcastToUser(userID, receipt)
+	fmt.Printf("[Chat] Broadcasted read_receipt to sender %d and recipient %d\n", data.SenderID, userID)
+
+	w.WriteHeader(http.StatusOK)
+}

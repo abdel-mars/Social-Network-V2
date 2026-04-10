@@ -27,6 +27,7 @@ func Mux() *http.ServeMux {
 	social.HandleFunc("/ws/chat", midle.AuthMiddleware(chat.Handler))
 	social.HandleFunc("/chat/messages", midle.AuthMiddleware(chat.GetHistoryHandler))
 	social.HandleFunc("/chat/conversations", midle.AuthMiddleware(chat.GetConversationsHandler))
+	social.HandleFunc("/chat/read", midle.AuthMiddleware(chat.MarkAsReadHandler))
 
 	// This The First Handler Of Login
 	// HER I WILL CREATE API FOR REDIRECT THE / END POINT BY STATE OF CURRENT USER !
