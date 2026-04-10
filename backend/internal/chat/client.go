@@ -67,6 +67,11 @@ func (c *Client) ReadPump() {
 			continue
 		}
 
+		// Enforce 300 character limit
+		if len(in.Content) > 300 {
+			in.Content = in.Content[:300]
+		}
+
 		// Save to DB
 		msg, err := SaveMessage(c.userID, in.RecipientID, in.Content)
 		if err != nil {
