@@ -9,7 +9,7 @@ const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
   ssr: false,
 });
 
-import { EmojiStyle } from "emoji-picker-react";
+
 
 export default function ChatInput({ onSend, onSendTyping }) {
   const [content, setContent] = useState("");
@@ -96,7 +96,7 @@ export default function ChatInput({ onSend, onSendTyping }) {
             onEmojiClick={handleEmojiClick}
             autoFocusSearch={false}
             theme="auto"
-            emojiStyle={EmojiStyle.GOOGLE}
+            emojiStyle="google"
             searchDisabled={true}
             skinTonesDisabled
             previewConfig={{ showPreview: false }}
