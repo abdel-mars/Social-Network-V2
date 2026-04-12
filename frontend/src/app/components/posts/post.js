@@ -102,6 +102,7 @@ export function RenderPosts({ post, setPosts }) {
         <PostModel
           selectedPost={selectedPost}
           setSelectedPost={setSelectedPost}
+          setPosts={setPosts}
           comment={comments}
           newComment={newComment}
           setNewComment={setNewcomment}

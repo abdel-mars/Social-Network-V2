@@ -42,6 +42,12 @@
   z-index: 1;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .authorRow {
   display: flex;
   align-items: center;
@@ -86,6 +92,33 @@
   color: #f05454;
 }
 
+.manageBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.manageBtn:hover:not(:disabled) {
+  border-color: var(--accent-light);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.deleteBtn:hover:not(:disabled) {
+  border-color: rgba(240,84,84,0.3);
+  background: rgba(240,84,84,0.08);
+  color: #f05454;
+}
+
 /* Body */
 .body {
   padding: 20px 24px;
@@ -117,6 +150,64 @@
 
 .reactions {
   padding-top: 8px;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editInput,
+.editTextarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.editInput:focus,
+.editTextarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.editTextarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.secondaryBtn,
+.primaryBtn {
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.secondaryBtn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.primaryBtn {
+  background: var(--accent);
+  color: white;
 }
 
 /* Comments */
