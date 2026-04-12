@@ -1,12 +1,12 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	get "social-network-backend/internal/repository"
-    "database/sql"
-    key "social-network-backend/internal/repository"
+	key "social-network-backend/internal/repository"
 )
 
 func Getposts(w http.ResponseWriter, r *http.Request) {
@@ -40,16 +40,54 @@ func Getposts(w http.ResponseWriter, r *http.Request) {
 
 func getAllPosts(userID int) ([]get.Posts, error) {
     query := `
-        SELECT p.id, p.user_id, u.username, u.first_name || ' ' || u.last_name AS full_name,u.avatar,
-               p.title, p.content, p.image_path, p.created_at, p.updated_at,
-               (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='like') AS likes_count,
-               (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='dislike') AS dislikes_count,
-               (SELECT reaction_type FROM reactions r WHERE r.post_id = p.id AND r.user_id = ?) AS user_reaction
-        FROM posts p
-        JOIN users u ON p.user_id = u.id
-        ORDER BY p.created_at DESC
+        SELECT *
+        FROM (
+            SELECT
+                p.id,
+                p.user_id,
+                u.username,
+                u.first_name || ' ' || u.last_name AS full_name,
+                u.avatar,
+                p.title,
+                p.content,
+                p.image_path,
+                p.created_at,
+                p.updated_at,
+                (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='like') AS likes_count,
+                (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='dislike') AS dislikes_count,
+                (SELECT reaction_type FROM reactions r WHERE r.post_id = p.id AND r.user_id = ?) AS user_reaction,
+                NULL AS group_id,
+                NULL AS group_title
+            FROM posts p
+            JOIN users u ON p.user_id = u.id
+
+            UNION ALL
+
+            SELECT
+                gp.id,
+                gp.creator_id AS user_id,
+                u.username,
+                u.first_name || ' ' || u.last_name AS full_name,
+                u.avatar,
+                gp.title,
+                gp.content,
+                gp.image AS image_path,
+                gp.created_at,
+                gp.created_at AS updated_at,
+                (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type='like') AS likes_count,
+                (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type='dislike') AS dislikes_count,
+                (SELECT reaction_type FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.user_id = ?) AS user_reaction,
+                gp.group_id,
+                g.title AS group_title
+            FROM group_posts gp
+            JOIN users u ON gp.creator_id = u.id
+            JOIN groups g ON gp.group_id = g.id
+            JOIN group_members gm ON gm.group_id = gp.group_id
+            WHERE gm.user_id = ? AND gm.status = 'member'
+        ) combined_posts
+        ORDER BY created_at DESC
     `
-    rows, err := get.DB.Query(query, userID)
+    rows, err := get.DB.Query(query, userID, userID, userID)
     if err != nil {
         return nil, err
     }
@@ -58,11 +96,13 @@ func getAllPosts(userID int) ([]get.Posts, error) {
     for rows.Next() {
         var p get.Posts
         var userReaction sql.NullString
+        var groupID sql.NullInt64
+        var groupTitle sql.NullString
 
         if err := rows.Scan(
             &p.ID, &p.UserID, &p.UserName, &p.FullName, &p.Avatar,
             &p.Title, &p.Content, &p.ImagePath, &p.CreatedAt, &p.UpdatedAt,
-            &p.LikesCount, &p.DislikesCount, &userReaction,
+            &p.LikesCount, &p.DislikesCount, &userReaction, &groupID, &groupTitle,
         ); err != nil {
             return nil, err
         }
@@ -71,9 +111,14 @@ func getAllPosts(userID int) ([]get.Posts, error) {
         } else {
             p.UserReaction = nil
         }
+        if groupID.Valid {
+            p.GroupID = int(groupID.Int64)
+        }
+        if groupTitle.Valid {
+            p.GroupTitle = groupTitle.String
+        }
 
         posts = append(posts, p)
     }
     return posts, nil
 }
-

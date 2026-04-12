@@ -102,6 +102,41 @@ export default function GroupDetailsPage() {
     }
   };
 
+  const handleCreatePost = async (e) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newContent.trim()) return;
+
+    const formData = new FormData();
+    formData.append("title", newTitle);
+    formData.append("content", newContent);
+    formData.append("group_id", id);
+    if (imageFile) formData.append("image", imageFile);
+
+    try {
+      const res = await fetch("http://localhost:8080/Creat_Post_Groupe", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "Failed to create group post");
+      }
+
+      const createdPost = await res.json();
+      setPosts((prev) => [createdPost, ...prev]);
+      setNewTitle("");
+      setNewContent("");
+      setImageFile(null);
+      setIsModalOpen(false);
+      setToast({ message: "Post published to the group.", type: "success" });
+    } catch (err) {
+      console.error(err);
+      setToast({ message: "Failed to create the group post.", type: "error" });
+    }
+  };
+
   useEffect(() => {
     const storedUserId = window.localStorage.getItem("userId");
     setCurrentUserId(storedUserId ? Number(storedUserId) : null);

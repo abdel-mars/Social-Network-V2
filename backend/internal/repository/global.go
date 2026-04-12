@@ -116,6 +116,8 @@ type Posts struct {
 	LikesCount    int     `json:"likes_count"`
 	DislikesCount int     `json:"dislikes_count"`
 	UserReaction  *string `json:"userReaction"`
+	GroupID       int     `json:"group_id,omitempty"`
+	GroupTitle    string  `json:"group_title,omitempty"`
 }
 
 type Sugg struct {

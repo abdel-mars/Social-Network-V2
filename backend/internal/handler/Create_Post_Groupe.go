@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -100,15 +101,22 @@ func AddNewPosts(title, content, imagePath string, userId, grouid int) (int64, e
 func GetAd_post(id int) (*key.Posts, error) {
 	query := `
         SELECT gp.id, gp.creator_id, u.username, u.first_name || ' ' || u.last_name AS full_name,
-               gp.title, gp.content, gp.image, gp.created_at, gp.created_at
+               u.avatar, gp.title, gp.content, gp.image, gp.created_at, gp.created_at,
+               gp.group_id, g.title,
+               (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'like') AS likes_count,
+               (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'dislike') AS dislikes_count,
+               NULL AS user_reaction
         FROM group_posts gp
         JOIN users u ON gp.creator_id = u.id
+        JOIN groups g ON gp.group_id = g.id
         WHERE gp.id = ?
     `
 	row := key.DB.QueryRow(query, id)
 	var post key.Posts
+	var userReaction sql.NullString
 	err := row.Scan(&post.ID, &post.UserID, &post.UserName, &post.FullName,
-		&post.Title, &post.Content, &post.ImagePath, &post.CreatedAt, &post.UpdatedAt)
+		&post.Avatar, &post.Title, &post.Content, &post.ImagePath, &post.CreatedAt, &post.UpdatedAt,
+		&post.GroupID, &post.GroupTitle, &post.LikesCount, &post.DislikesCount, &userReaction)
 	if err != nil {
 		return nil, err
 	}

@@ -1,13 +1,13 @@
 "use client";
 
 export function useReactions({ setPosts, selectedPost, setSelectedPost }) {
-  const handleReaction = async (reaction, postId) => {
+  const handleReaction = async (reaction, postId, postType = "post") => {
     try {
       const res = await fetch("http://localhost:8080/reactions", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ post_id: postId, reaction }),
+        body: JSON.stringify({ post_id: postId, reaction, post_type: postType }),
       });
       const text = await res.text();
       if (!res.ok) throw new Error("Server error: " + text);

@@ -23,14 +23,45 @@ func Reaction(w http.ResponseWriter, r *http.Request) {
 		var input struct {
 			PostID   int    `json:"post_id"`
 			Reaction string `json:"reaction"`
+			PostType string `json:"post_type"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
+		if input.PostType == "" {
+			input.PostType = "post"
+		}
+		if input.Reaction != "like" && input.Reaction != "dislike" {
+			http.Error(w, "Invalid reaction", http.StatusBadRequest)
+			return
+		}
+
+		var selectQuery, insertQuery, deleteQuery, updateQuery string
+		var likesQuery, dislikesQuery string
+
+		if input.PostType == "group_post" {
+			if !canAccessGroupPost(input.PostID, userID) {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+			selectQuery = "SELECT reaction_type FROM group_post_reactions WHERE user_id = ? AND group_post_id = ?"
+			insertQuery = "INSERT INTO group_post_reactions (user_id, group_post_id, reaction_type) VALUES (?, ?, ?)"
+			deleteQuery = "DELETE FROM group_post_reactions WHERE user_id = ? AND group_post_id = ?"
+			updateQuery = "UPDATE group_post_reactions SET reaction_type = ? WHERE user_id = ? AND group_post_id = ?"
+			likesQuery = "SELECT COUNT(*) FROM group_post_reactions WHERE group_post_id = ? AND reaction_type = 'like'"
+			dislikesQuery = "SELECT COUNT(*) FROM group_post_reactions WHERE group_post_id = ? AND reaction_type = 'dislike'"
+		} else {
+			selectQuery = "SELECT reaction_type FROM reactions WHERE user_id = ? AND post_id = ?"
+			insertQuery = "INSERT INTO reactions (user_id, post_id, reaction_type) VALUES (?, ?, ?)"
+			deleteQuery = "DELETE FROM reactions WHERE user_id = ? AND post_id = ?"
+			updateQuery = "UPDATE reactions SET reaction_type = ? WHERE user_id = ? AND post_id = ?"
+			likesQuery = "SELECT COUNT(*) FROM reactions WHERE post_id = ? AND reaction_type = 'like'"
+			dislikesQuery = "SELECT COUNT(*) FROM reactions WHERE post_id = ? AND reaction_type = 'dislike'"
+		}
 		var currentReaction string
 		err := key.DB.QueryRow(
-			"SELECT reaction_type FROM reactions WHERE user_id = ? AND post_id = ?",
+			selectQuery,
 			userID, input.PostID,
 		).Scan(&currentReaction)
 		// here if there is not row in the first the error will block the procces !!
@@ -45,18 +76,18 @@ func Reaction(w http.ResponseWriter, r *http.Request) {
 		if currentReaction == "" {
 			// No Reaction Yet → insert new
 			_, err = key.DB.Exec(
-				"INSERT INTO reactions (user_id, post_id, reaction_type) VALUES (?, ?, ?)",
+				insertQuery,
 				userID, input.PostID, input.Reaction,
 			)
 		} else if currentReaction == input.Reaction {
 			// <====>
 			_, err = key.DB.Exec(
-				"DELETE FROM reactions WHERE user_id = ? AND post_id = ?",
+				deleteQuery,
 				userID, input.PostID,
 			)
 		} else {
 			_, err = key.DB.Exec(
-				"UPDATE reactions SET reaction_type = ? WHERE user_id = ? AND post_id = ?",
+				updateQuery,
 				input.Reaction, userID, input.PostID,
 			)
 		}
@@ -68,17 +99,17 @@ func Reaction(w http.ResponseWriter, r *http.Request) {
 		// |>....<| <<<<=====>>> !!!   
 		var likes, dislikes int
 		_ = key.DB.QueryRow(
-			"SELECT COUNT(*) FROM reactions WHERE post_id = ? AND reaction_type = 'like'",
+			likesQuery,
 			input.PostID,
 		).Scan(&likes)
 		_ = key.DB.QueryRow(
-			"SELECT COUNT(*) FROM reactions WHERE post_id = ? AND reaction_type = 'dislike'",
+			dislikesQuery,
 			input.PostID,
 		).Scan(&dislikes)
 		
 		var userReaction sql.NullString
 		_ = key.DB.QueryRow(
-			"SELECT reaction_type FROM reactions WHERE user_id = ? AND post_id = ?",
+			selectQuery,
 			userID, input.PostID,
 		).Scan(&userReaction)
 	
@@ -89,5 +120,15 @@ func Reaction(w http.ResponseWriter, r *http.Request) {
 			"userReaction": userReaction.String, 
 		})
 }
-	
 
+func canAccessGroupPost(groupPostID, userID int) bool {
+	var exists int
+	err := key.DB.QueryRow(`
+		SELECT 1
+		FROM group_posts gp
+		JOIN group_members gm ON gm.group_id = gp.group_id
+		WHERE gp.id = ? AND gm.user_id = ? AND gm.status = 'member'
+		LIMIT 1
+	`, groupPostID, userID).Scan(&exists)
+	return err == nil && exists == 1
+}

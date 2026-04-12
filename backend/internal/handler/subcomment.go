@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	re "social-network-backend/internal/repository"
-	jib "social-network-backend/internal/set_get_data_base"
 	"strconv"
 	"strings"
 )
@@ -29,6 +28,11 @@ func Submitcomment(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    postType := r.URL.Query().Get("post_type")
+    if postType == "" {
+        postType = "post"
+    }
+
     switch r.Method {
     case http.MethodPost: 
         // --- Add new comment ---
@@ -45,53 +49,117 @@ func Submitcomment(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "Invalid JSON", http.StatusBadRequest)
             return
         }
+        var comment map[string]interface{}
 
-        stmt, err := re.DB.Prepare(re.INSERT_NEW_COMMENT)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-
-        res, err := stmt.Exec(userID, postID, input.Content)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-
-        id, _ := res.LastInsertId()
-
-        // Return the inserted comment with timestamp
-        var commentID, uid, pid int
-        var commentText, createdAt string
-        err = re.DB.QueryRow(
-            `SELECT id, user_id, post_id, content, created_at FROM comments WHERE id = ?`, id,
-        ).Scan(&commentID, &uid, &pid, &commentText, &createdAt)
-        if err != nil {
-            if err == sql.ErrNoRows{
-                http.Error(w, "Comment not found after insertion", http.StatusInternalServerError)
+        if postType == "group_post" {
+            if !canAccessGroupPost(postID, userID) {
+                http.Error(w, "Forbidden", http.StatusForbidden)
                 return
-                
             }
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
 
-        comment := map[string]interface{}{
-            "id":         commentID,
-            "user_id":    uid,
-            "post_id":    pid,
-            "text":       commentText,
-            "created_at": createdAt,
+            res, err := re.DB.Exec(
+                `INSERT INTO group_post_comments (user_id, group_post_id, content) VALUES (?, ?, ?)`,
+                userID, postID, input.Content,
+            )
+            if err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+
+            id, _ := res.LastInsertId()
+
+            var commentID, uid, pid int
+            var commentText, createdAt, username string
+            err = re.DB.QueryRow(`
+                SELECT c.id, c.user_id, c.group_post_id, c.content, c.created_at, u.username
+                FROM group_post_comments c
+                JOIN users u ON u.id = c.user_id
+                WHERE c.id = ?
+            `, id).Scan(&commentID, &uid, &pid, &commentText, &createdAt, &username)
+            if err != nil {
+                if err == sql.ErrNoRows {
+                    http.Error(w, "Comment not found after insertion", http.StatusInternalServerError)
+                    return
+                }
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+
+            comment = map[string]interface{}{
+                "id":         commentID,
+                "user_id":    uid,
+                "user_name":  username,
+                "post_id":    pid,
+                "text":       commentText,
+                "created_at": createdAt,
+            }
+        } else {
+            stmt, err := re.DB.Prepare(re.INSERT_NEW_COMMENT)
+            if err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+
+            res, err := stmt.Exec(userID, postID, input.Content)
+            if err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+
+            id, _ := res.LastInsertId()
+
+            var commentID, uid, pid int
+            var commentText, createdAt, username string
+            err = re.DB.QueryRow(`
+                SELECT c.id, c.user_id, c.post_id, c.content, c.created_at, u.username
+                FROM comments c
+                JOIN users u ON u.id = c.user_id
+                WHERE c.id = ?
+            `, id).Scan(&commentID, &uid, &pid, &commentText, &createdAt, &username)
+            if err != nil {
+                if err == sql.ErrNoRows{
+                    http.Error(w, "Comment not found after insertion", http.StatusInternalServerError)
+                    return
+                }
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+
+            comment = map[string]interface{}{
+                "id":         commentID,
+                "user_id":    uid,
+                "user_name":  username,
+                "post_id":    pid,
+                "text":       commentText,
+                "created_at": createdAt,
+            }
         }
 
         w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(comment)
 
     case http.MethodGet:
-        // >> Her i Will get the comment of the post!
-        rows, err := re.DB.Query(
-            `SELECT id, user_id, post_id, content, created_at FROM comments WHERE post_id = ? ORDER BY created_at ASC`, postID,
-        )
+        var rows *sql.Rows
+        if postType == "group_post" {
+            viewerID, ok := r.Context().Value(re.UserIDKey).(int)
+            if !ok || !canAccessGroupPost(postID, viewerID) {
+                http.Error(w, "Forbidden", http.StatusForbidden)
+                return
+            }
+            rows, err = re.DB.Query(
+                `SELECT c.id, c.user_id, c.group_post_id, c.content, c.created_at, u.username
+                 FROM group_post_comments c
+                 JOIN users u ON u.id = c.user_id
+                 WHERE c.group_post_id = ? ORDER BY c.created_at ASC`, postID,
+            )
+        } else {
+            rows, err = re.DB.Query(
+                `SELECT c.id, c.user_id, c.post_id, c.content, c.created_at, u.username
+                 FROM comments c
+                 JOIN users u ON u.id = c.user_id
+                 WHERE c.post_id = ? ORDER BY c.created_at ASC`, postID,
+            )
+        }
         if err != nil {
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
@@ -102,16 +170,15 @@ func Submitcomment(w http.ResponseWriter, r *http.Request) {
         var comments []map[string]interface{}
         for rows.Next() {
             var id, uid, pid int
-            var text, createdAt string
-            if err := rows.Scan(&id, &uid, &pid, &text, &createdAt); err != nil {
+            var text, createdAt, username string
+            if err := rows.Scan(&id, &uid, &pid, &text, &createdAt, &username); err != nil {
                 http.Error(w, err.Error(), http.StatusInternalServerError)
                 return
             }
-            // Her I Will Get Name Of The User By User Id 
-            name , _ := jib.GetUserNameById(uid)
             comments = append(comments, map[string]interface{}{
                 "id":         id,
-                "user_id":    name,
+                "user_id":    uid,
+                "user_name":  username,
                 "post_id":    pid,
                 "text":       text,
                 "created_at": createdAt,

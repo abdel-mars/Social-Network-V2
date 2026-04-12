@@ -20,13 +20,14 @@ export function RenderPosts({ post, setPosts }) {
     selectedPost,
     setSelectedPost,
   });
+  const postType = post.group_id ? "group_post" : "post";
 
   useEffect(() => {
     if (!selectedPost) return;
     async function fetchComments() {
       try {
         const res = await fetch(
-          `http://localhost:8080/posts/${selectedPost.id}/comments`,
+          `http://localhost:8080/posts/${selectedPost.id}/comments?post_type=${selectedPost.group_id ? "group_post" : "post"}`,
           { method: "GET", credentials: "include" }
         );
         if (!res.ok) return;
@@ -53,11 +54,17 @@ export function RenderPosts({ post, setPosts }) {
             className={styles.avatar}
             onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/default-avatar.png"; }}
           />
-          <div className={styles.authorInfo}>
-            <span className={styles.authorName}>{post.full_name || post.user_name}</span>
-            <span className={styles.postTime}>{timeAgo(post.created_at)}</span>
-          </div>
+        <div className={styles.authorInfo}>
+          <span className={styles.authorName}>{post.full_name || post.user_name}</span>
+          <span className={styles.postTime}>{timeAgo(post.created_at)}</span>
         </div>
+        </div>
+
+        {post.group_title && (
+          <div className={styles.groupMeta}>
+            Posted in <span className={styles.groupBadge}>{post.group_title}</span>
+          </div>
+        )}
 
         {/* Content */}
         <h3 className={styles.postTitle}>{post.title}</h3>
@@ -82,7 +89,7 @@ export function RenderPosts({ post, setPosts }) {
             userReaction={post.userReaction}
             likesCount={post.likes_count}
             dislikesCount={post.dislikes_count}
-            onReact={(reaction) => handleReaction(reaction, post.id)}
+            onReact={(reaction) => handleReaction(reaction, post.id, postType)}
           />
           <button className={styles.commentBtn} onClick={() => setSelectedPost(post)}>
             <MessageSquare size={15} />

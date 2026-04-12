@@ -90,12 +90,16 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 	if group.MemberStatus == "member" {
 		postsRows, err := key.DB.Query(`
             SELECT gp.id, gp.creator_id, u.username, u.first_name || ' ' || u.last_name AS full_name,
-                gp.title, gp.content, gp.image, gp.created_at
+                u.avatar, gp.title, gp.content, gp.image, gp.created_at, gp.group_id, g.title,
+                (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'like') AS likes_count,
+                (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'dislike') AS dislikes_count,
+                (SELECT reaction_type FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.user_id = ?) AS user_reaction
             FROM group_posts gp
             JOIN users u ON gp.creator_id = u.id
+            JOIN groups g ON gp.group_id = g.id
             WHERE gp.group_id = ?
             ORDER BY gp.created_at DESC
-        `, groupID)
+        `, userID, groupID)
 		if err == nil {
 			defer postsRows.Close()
 			for postsRows.Next() {
@@ -103,11 +107,17 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 				var creatorID int
 				var username string
 				var fullName string
+				var avatar sql.NullString
 				var title string
 				var content string
 				var image sql.NullString
 				var createdAt string
-				if err := postsRows.Scan(&id, &creatorID, &username, &fullName, &title, &content, &image, &createdAt); err != nil {
+				var postGroupID int
+				var postGroupTitle string
+				var likesCount int
+				var dislikesCount int
+				var userReaction sql.NullString
+				if err := postsRows.Scan(&id, &creatorID, &username, &fullName, &avatar, &title, &content, &image, &createdAt, &postGroupID, &postGroupTitle, &likesCount, &dislikesCount, &userReaction); err != nil {
 					continue
 				}
 				post := map[string]any{
@@ -118,9 +128,17 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 					"title":          title,
 					"content":        content,
 					"created_at":     createdAt,
-					"likes_count":    0,
-					"dislikes_count": 0,
+					"group_id":       postGroupID,
+					"group_title":    postGroupTitle,
+					"likes_count":    likesCount,
+					"dislikes_count": dislikesCount,
 					"userReaction":   nil,
+				}
+				if userReaction.Valid {
+					post["userReaction"] = userReaction.String
+				}
+				if avatar.Valid {
+					post["avatar"] = avatar.String
 				}
 				if image.Valid {
 					post["image_path"] = image.String

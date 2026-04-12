@@ -15,13 +15,14 @@ export function PostModel({
   handleReaction,
 }) {
   const [previewImage, setPreviewImage] = useState(null);
+  const postType = selectedPost?.group_id ? "group_post" : "post";
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost) return;
 
     try {
       const res = await fetch(
-        `http://localhost:8080/posts/${selectedPost.id}/comments/comments`,
+        `http://localhost:8080/posts/${selectedPost.id}/comments/comments?post_type=${postType}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -88,7 +89,7 @@ export function PostModel({
               userReaction={selectedPost.userReaction}
               likesCount={selectedPost.likes_count}
               dislikesCount={selectedPost.dislikes_count}
-              onReact={(reaction) => handleReaction(reaction, selectedPost.id)}
+              onReact={(reaction) => handleReaction(reaction, selectedPost.id, postType)}
             />
           </div>
         </div>
@@ -102,7 +103,7 @@ export function PostModel({
               comment.map((c) => (
                 <div key={c.id} className={styles.commentItem}>
                   <div className={styles.commentMeta}>
-                    <span className={styles.commentUser}>User #{c.user_id}</span>
+                    <span className={styles.commentUser}>@{c.user_name || c.user_id}</span>
                     <span className={styles.commentTime}>{timeAgo(c.created_at)}</span>
                   </div>
                   <p className={styles.commentText}>{c.text}</p>
