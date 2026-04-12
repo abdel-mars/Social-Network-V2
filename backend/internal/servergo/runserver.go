@@ -43,6 +43,8 @@ func Mux() *http.ServeMux {
 
 	//
 	social.HandleFunc("/Createpost", midle.AuthMiddleware(handler.CreatePost))
+	social.HandleFunc("/post/update", midle.AuthMiddleware(handler.Update_Post))
+	social.HandleFunc("/post/delete", midle.AuthMiddleware(handler.Delete_Post))
 	social.HandleFunc("/getposts", midle.AuthMiddleware(handler.Getposts))
 	social.HandleFunc("/posts/", midle.AuthMiddleware(handler.Submitcomment))
 	// <<==>>

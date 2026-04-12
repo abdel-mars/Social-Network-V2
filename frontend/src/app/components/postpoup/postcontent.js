@@ -23,7 +23,7 @@ export function PostModel({
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const postType = selectedPost?.group_id ? "group_post" : "post";
-  const canManageGroupPost = postType === "group_post" && Number(currentUserId) === Number(selectedPost?.user_id);
+  const canManagePost = Number(currentUserId) === Number(selectedPost?.user_id);
 
   useEffect(() => {
     const storedUserId = window.localStorage.getItem("userId");
@@ -67,7 +67,9 @@ export function PostModel({
 
     try {
       setSaving(true);
-      const res = await fetch("http://localhost:8080/group-post/update", {
+      const res = await fetch(
+        postType === "group_post" ? "http://localhost:8080/group-post/update" : "http://localhost:8080/post/update",
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -77,7 +79,7 @@ export function PostModel({
           content: editContent,
         }),
       });
-      if (!res.ok) throw new Error("Failed to update group post");
+      if (!res.ok) throw new Error("Failed to update post");
 
       const updatedPost = await res.json();
       setPosts((prevPosts) =>
@@ -86,7 +88,7 @@ export function PostModel({
       setSelectedPost((prev) => ({ ...prev, ...updatedPost }));
       setIsEditing(false);
     } catch (err) {
-      console.error("Failed to update group post:", err);
+      console.error("Failed to update post:", err);
     } finally {
       setSaving(false);
     }
@@ -95,18 +97,20 @@ export function PostModel({
   const handleDeletePost = async () => {
     try {
       setSaving(true);
-      const res = await fetch("http://localhost:8080/group-post/delete", {
+      const res = await fetch(
+        postType === "group_post" ? "http://localhost:8080/group-post/delete" : "http://localhost:8080/post/delete",
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ post_id: selectedPost.id }),
       });
-      if (!res.ok) throw new Error("Failed to delete group post");
+      if (!res.ok) throw new Error("Failed to delete post");
 
       setPosts((prevPosts) => prevPosts.filter((post) => post.id !== selectedPost.id));
       setSelectedPost(null);
     } catch (err) {
-      console.error("Failed to delete group post:", err);
+      console.error("Failed to delete post:", err);
     } finally {
       setSaving(false);
       setShowDeleteConfirm(false);
@@ -133,7 +137,7 @@ export function PostModel({
             </div>
           </div>
           <div className={styles.headerActions}>
-            {canManageGroupPost && (
+            {canManagePost && (
               <>
                 <button
                   type="button"
@@ -273,7 +277,9 @@ export function PostModel({
               </div>
               <h4 className={styles.confirmTitle}>Delete this post?</h4>
               <p className={styles.confirmText}>
-                This will permanently remove the group post for every member.
+                {postType === "group_post"
+                  ? "This will permanently remove the group post for every member."
+                  : "This will permanently remove the post from the feed."}
               </p>
               <div className={styles.confirmButtons}>
                 <button
