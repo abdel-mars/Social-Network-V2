@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { Pencil, Trash2, X } from "lucide-react";
+import { AlertTriangle, Pencil, Trash2, X } from "lucide-react";
 import { timeAgo } from "../../lib/time";
 import { ReactionButtons } from "../reactions/ReactionButtons";
 import { ImagePreview } from "../ui/ImagePreview";
@@ -21,6 +21,7 @@ export function PostModel({
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const postType = selectedPost?.group_id ? "group_post" : "post";
   const canManageGroupPost = postType === "group_post" && Number(currentUserId) === Number(selectedPost?.user_id);
 
@@ -34,6 +35,7 @@ export function PostModel({
     setEditTitle(selectedPost.title || "");
     setEditContent(selectedPost.content || "");
     setIsEditing(false);
+    setShowDeleteConfirm(false);
   }, [selectedPost]);
 
   const handleAddComment = async () => {
@@ -91,8 +93,6 @@ export function PostModel({
   };
 
   const handleDeletePost = async () => {
-    if (!window.confirm("Delete this group post?")) return;
-
     try {
       setSaving(true);
       const res = await fetch("http://localhost:8080/group-post/delete", {
@@ -109,6 +109,7 @@ export function PostModel({
       console.error("Failed to delete group post:", err);
     } finally {
       setSaving(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -146,7 +147,7 @@ export function PostModel({
                 <button
                   type="button"
                   className={`${styles.manageBtn} ${styles.deleteBtn}`}
-                  onClick={handleDeletePost}
+                  onClick={() => setShowDeleteConfirm(true)}
                   disabled={saving}
                 >
                   <Trash2 size={16} />
@@ -262,6 +263,38 @@ export function PostModel({
             src={previewImage} 
             onClose={() => setPreviewImage(null)} 
           />
+        )}
+
+        {showDeleteConfirm && (
+          <div className={styles.confirmOverlay} onClick={() => !saving && setShowDeleteConfirm(false)}>
+            <div className={styles.confirmCard} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.confirmIcon}>
+                <AlertTriangle size={18} />
+              </div>
+              <h4 className={styles.confirmTitle}>Delete this post?</h4>
+              <p className={styles.confirmText}>
+                This will permanently remove the group post for every member.
+              </p>
+              <div className={styles.confirmButtons}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.primaryBtn} ${styles.confirmDeleteBtn}`}
+                  onClick={handleDeletePost}
+                  disabled={saving}
+                >
+                  {saving ? "Deleting..." : "Delete Post"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>,
