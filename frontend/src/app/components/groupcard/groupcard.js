@@ -3,11 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, Lock, ShieldCheck } from "lucide-react";
+import { useNotifications } from "../notifications/NotificationsContext";
 import styles from "./groupcard.module.css";
 
 export default function GroupCard({ group, Clickable = true }) {
   const router = useRouter();
-  const [joined, setJoined] = useState(group.joined || false);
+  const { notifications, markNotificationsRead, removeNotifications } = useNotifications();
+  const [status, setStatus] = useState(group.user_status || group.member_status || "not_member");
+  const joined = status === "member";
+  const isPending = status === "requested" || status === "declined";
   const [loading, setLoading] = useState(false);
 
   const handleCardClick = () => {
@@ -25,7 +29,23 @@ export default function GroupCard({ group, Clickable = true }) {
         body: JSON.stringify({ group_id: group.id }),
       });
       if (res.ok) {
-        setJoined(true);
+        const data = await res.json();
+        const nextState = data?.state === "member" ? "member" : "requested";
+        setStatus(nextState);
+
+        if (nextState === "member") {
+          const inviteNotificationIds = notifications
+            .filter(
+              (notification) =>
+                notification.type === "group_invitation" && notification.group_id === group.id
+            )
+            .map((notification) => notification.id);
+
+          if (inviteNotificationIds.length > 0) {
+            await markNotificationsRead(inviteNotificationIds);
+            removeNotifications(inviteNotificationIds);
+          }
+        }
       }
     } catch (err) {
       console.error("Failed to join:", err);
@@ -59,13 +79,17 @@ export default function GroupCard({ group, Clickable = true }) {
           <button className={`${styles.joinBtn} ${styles.joined}`} disabled>
             Joined
           </button>
+        ) : isPending ? (
+          <button className={styles.joinBtn} disabled>
+            {status === "requested" ? "Request Sent" : "Invited"}
+          </button>
         ) : (
           <button 
             className={styles.joinBtn} 
             onClick={handleJoin}
             disabled={loading}
           >
-            {loading ? "Joining..." : "Join Group"}
+            {loading ? "Joining..." : status === "invited" ? "Accept Invite" : "Join Group"}
           </button>
         )}
       </div>

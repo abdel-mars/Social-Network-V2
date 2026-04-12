@@ -1,18 +1,19 @@
 package handler
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	repo "social-network-backend/internal/repository"
-	"encoding/json"
-	"database/sql"
 )
 
-type DataGroups struct{
-	Id int `json:"id"`
-	Name string `json:"name"`
+type DataGroups struct {
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
 	Description string `json:"description"`
-	UserStatus string `json:"user_status"`
+	Privacy     string `json:"privacy"`
+	UserStatus  string `json:"user_status"`
 }
 
 func Get_Groups(w http.ResponseWriter, r *http.Request) {
@@ -21,12 +22,12 @@ func Get_Groups(w http.ResponseWriter, r *http.Request) {
 	// Her I Will Get The Current User Who Want To Get This Data <!!
 	UserID, ok := r.Context().Value(repo.UserIDKey).(int)
 	if !ok {
-        http.Error(w, "Internal server errro", http.StatusUnauthorized)
-        return
-    }
+		http.Error(w, "Internal server errro", http.StatusUnauthorized)
+		return
+	}
 	db := repo.DB
 	rows, err := db.Query(`
-		SELECT g.id, g.title, g.description, gm.status
+		SELECT g.id, g.title, g.description, g.privacy, gm.status
 		FROM groups g
 		LEFT JOIN (
 			SELECT group_id, status
@@ -45,8 +46,9 @@ func Get_Groups(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var group DataGroups
 		var status sql.NullString
+		var privacy string
 
-		err := rows.Scan(&group.Id, &group.Name, &group.Description, &status)
+		err := rows.Scan(&group.Id, &group.Name, &group.Description, &privacy, &status)
 		if err != nil {
 			http.Error(w, "Error scanning group", http.StatusInternalServerError)
 			fmt.Println("Scan Error:", err)
@@ -54,9 +56,10 @@ func Get_Groups(w http.ResponseWriter, r *http.Request) {
 		}
 		if status.Valid {
 			group.UserStatus = status.String
-		}else {
+		} else {
 			group.UserStatus = "not_member"
 		}
+		group.Privacy = privacy
 		groups = append(groups, group)
 	}
 	w.Header().Set("Content-Type", "application/json")

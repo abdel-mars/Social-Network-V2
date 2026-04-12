@@ -10,6 +10,7 @@ import { useTheme } from "../ui/ThemeContext";
 import { useChat } from "../chat/ChatContext";
 import AccentPicker from "../ui/AccentPicker";
 import { NotificationPanel } from "../notifications/notificationpanel";
+import { useNotifications } from "../notifications/NotificationsContext";
 import style from "./bar.module.css";
 import chatStyle from "../chat/chat.module.css";
 
@@ -23,6 +24,7 @@ export function Renderbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { notificationCount } = useNotifications();
 
   const [userId, setUserId] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -124,7 +126,14 @@ export function Renderbar() {
                 onClick={() => setNotifOpen(!notifOpen)}
                 title="Notifications"
               >
-                <Bell size={18} />
+                <div className={style.notifBell}>
+                  <Bell size={18} />
+                  {notificationCount > 0 && (
+                    <span className={style.notifBadge}>
+                      {notificationCount > 9 ? "+9" : notificationCount}
+                    </span>
+                  )}
+                </div>
               </button>
               {notifOpen && (
                 <div className={style.notifDropdown}>

@@ -2,15 +2,24 @@
 
 import { useState } from "react";
 import { timeAgo } from "../../lib/time";
+import { useNotifications } from "../notifications/NotificationsContext";
 import styles from "./notification.module.css";
 import { Check, X, UserPlus, UserCheck } from "lucide-react";
 
 export default function FollowRequest({ request }) {
+  const { markNotificationsRead, removeNotifications } = useNotifications();
   const [status, setStatus] = useState(
-    request.receiver_is_private === true ? "pending" : "accepted"
+    request.state === "accepted"
+      ? "accepted"
+      : request.receiver_is_private === true
+        ? "pending"
+        : "accepted"
   );
-  const [followBackStatus, setFollowBackStatus] = useState("not_following");
+  const [followBackStatus, setFollowBackStatus] = useState(
+    request.is_following_sender ? "following" : "not_following"
+  );
   const [followBackLoading, setFollowBackLoading] = useState(false);
+  const hasFollowedBack = followBackStatus === "following";
 
   const handleFollowAction = async (senderId, action) => {
     try {
@@ -20,7 +29,12 @@ export default function FollowRequest({ request }) {
         credentials: "include",
         body: JSON.stringify({ sender_id: senderId, status: action }),
       });
-      if (res.ok) setStatus(action);
+      if (res.ok) {
+        setStatus(action);
+        if (action === "reject") {
+          removeNotifications([request.id]);
+        }
+      }
     } catch (err) {
       console.error("Error:", err);
     }
@@ -37,6 +51,7 @@ export default function FollowRequest({ request }) {
       });
       if (res.ok) {
         setFollowBackStatus("following");
+        await markNotificationsRead([request.id]);
         window.dispatchEvent(new CustomEvent("followUpdated"));
       }
     } catch (err) {
@@ -57,7 +72,8 @@ export default function FollowRequest({ request }) {
       
       <div className={styles.content}>
         <div className={styles.textLine}>
-          <span className={styles.username}>@{request.sender.username}</span> requested to follow you
+          <span className={styles.username}>@{request.sender.username}</span>{" "}
+          {hasFollowedBack ? "followed you back" : "requested to follow you"}
         </div>
 
         {status === "pending" && (
@@ -73,20 +89,22 @@ export default function FollowRequest({ request }) {
 
         {status === "accepted" && (
           <div className={styles.actions}>
-            <span className={styles.statusLabel}>Accepted</span>
-            <button
-              className={styles.followBackBtn}
-              onClick={() => handleFollowBack(request.sender.id)}
-              disabled={followBackStatus === "following" || followBackLoading}
-            >
-              {followBackLoading ? (
-                "..."
-              ) : followBackStatus === "following" ? (
-                <><UserCheck size={13} /> Following</>
-              ) : (
-                <><UserPlus size={13} /> Follow Back</>
-              )}
-            </button>
+            <span className={styles.statusLabel}>
+              {hasFollowedBack ? "Followed back" : "Accepted"}
+            </span>
+            {!hasFollowedBack && (
+              <button
+                className={styles.followBackBtn}
+                onClick={() => handleFollowBack(request.sender.id)}
+                disabled={followBackLoading}
+              >
+                {followBackLoading ? (
+                  "..."
+                ) : (
+                  <><UserPlus size={13} /> Follow Back</>
+                )}
+              </button>
+            )}
           </div>
         )}
 

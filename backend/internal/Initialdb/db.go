@@ -17,11 +17,14 @@ func InitDB(datasource string) {
 	var err error
 	repo.DB, err = sql.Open("sqlite3", datasource)
 	if err != nil {
-		log.Fatalf("Faile open database", err)
+		log.Fatalf("Failed to open database: %v", err)
 	}
 	err = CreateTable(repo.DB)
 	if err != nil {
-		log.Fatalf("Faile Create Table", err)
+		log.Fatalf("Failed to create tables: %v", err)
+	}
+	if err := migrateSchema(repo.DB); err != nil {
+		log.Fatalf("Failed migrate schema: %v", err)
 	}
 
 	// Hot-fix/Migration: ensure is_read column exists in messages table
@@ -51,6 +54,17 @@ func CreateTable(db *sql.DB) error {
 		if err != nil {
 			return fmt.Errorf("failed to execute schema %s: %v", path, err)
 		}
+	}
+	return nil
+}
+
+func migrateSchema(db *sql.DB) error {
+	_, err := db.Exec(`ALTER TABLE groups ADD COLUMN privacy TEXT NOT NULL DEFAULT 'Public'`)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate column name") || strings.Contains(err.Error(), "already exists") {
+			return nil
+		}
+		return err
 	}
 	return nil
 }

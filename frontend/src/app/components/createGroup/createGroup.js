@@ -1,27 +1,48 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Users, X } from "lucide-react";
 import styles from "./createGroup.module.css";
 
 export function CreateGroupModal() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    await fetch("http://localhost:8080/Create_Group", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ Title: title, Description: desc }),
-      credentials: "include",
-    });
+    try {
+      const res = await fetch("http://localhost:8080/Create_Group", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Title: title, Description: desc }),
+        credentials: "include",
+      });
 
-    setTitle("");
-    setDesc("");
-    setOpen(false);
+      if (!res.ok) {
+        const err = await res.text();
+        alert("Error creating group: " + err);
+        return;
+      }
+
+      const data = await res.json();
+      setTitle("");
+      setDesc("");
+      setOpen(false);
+      
+      // Redirect to the new group detail page
+      router.push(`/groups/${data.id}`);
+    } catch (err) {
+      console.error("Failed to create group:", err);
+      alert("Error creating group");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,11 +87,11 @@ export function CreateGroupModal() {
               </div>
 
               <div className={styles.actions}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setOpen(false)}>
+                <button type="button" className={styles.cancelBtn} onClick={() => setOpen(false)} disabled={loading}>
                   Cancel
                 </button>
-                <button type="submit" className={styles.submitBtn}>
-                  Create
+                <button type="submit" className={styles.submitBtn} disabled={loading}>
+                  {loading ? "Creating..." : "Create"}
                 </button>
               </div>
             </form>

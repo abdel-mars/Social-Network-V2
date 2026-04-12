@@ -33,38 +33,103 @@ func Request_Join(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("User is trying to join group:", req.GroupID)
 	fmt.Println("the user who try to join ", userID)
-	// i will add current to the members
-	Insert_member(userID, req.GroupID, w, "requested")
+
+	groupExists, err := GroupExists(req.GroupID)
+	if err != nil {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	if !groupExists {
+		http.Error(w, "Group not found", http.StatusNotFound)
+		return
+	}
+
+	currentStatus, err := GetGroupMemberStatus(req.GroupID, userID)
+	if err != nil {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+	if currentStatus == "member" {
+		http.Error(w, "Already a member of the group", http.StatusBadRequest)
+		return
+	}
+	if currentStatus == "requested" {
+		http.Error(w, "Join request already pending", http.StatusConflict)
+		return
+	}
+	if currentStatus == "invited" {
+		if err := EnsureGroupMembership(req.GroupID, userID, "member"); err != nil {
+			http.Error(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+
+		if err := UpdateInvitationNotificationState(req.GroupID, userID, "accepted"); err != nil {
+			fmt.Println("warning: failed to update invite notification state:", err)
+		}
+
+		creatorID, err := GetGroupCreatorID(req.GroupID)
+		if err != nil {
+			http.Error(w, "Failed to resolve group owner", http.StatusInternalServerError)
+			return
+		}
+
+		responseID, err := AddNotification_Group(
+			creatorID,
+			userID,
+			"group_invitation_response",
+			fmt.Sprintf("%d accepted your group invitation", userID),
+			req.GroupID,
+		)
+		if err == nil {
+			if notif, err := GetNotificationByID(int(responseID)); err == nil && notif != nil {
+				notificationgoroutine.SendNotification(*notif)
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"group_id": req.GroupID,
+			"state":    "member",
+		})
+		return
+	}
+
+	if err := EnsureGroupMembership(req.GroupID, userID, "requested"); err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
 	// Here I Will Set Notification
 	// OK I WILL GET THE OWNER OF THE THIS GROUBE BECS IT'S THE ONE WHO WILL  SEE THIS NOTIFICAION
 	// I Will Need The ID OF THE OWNER OF THIS GROUBE BECS HE IS THE ONE WHO WILL GET THIS NOTIFICAION
-	var creatorID int
-	err = repo.DB.QueryRow(`SELECT creator_id FROM groups WHERE id = ?`, req.GroupID).Scan(&creatorID)
+	creatorID, err := GetGroupCreatorID(req.GroupID)
 	if err != nil {
-		http.Error(w, "Group not found", http.StatusNotFound)
+		http.Error(w, "Failed to resolve group owner", http.StatusInternalServerError)
 		return
 	}
 	fmt.Println("User Is Trying To Join Group:", req.GroupID)
 	fmt.Println("The User Who I Try To Join ", userID)
 	fmt.Println("The Owner Of Groub Who Must Take This_Notification", creatorID)
-	message := fmt.Sprintf("Ther user %d it send to u to joing to the groube !!", userID)
+	message := fmt.Sprintf("User %d requested to join your group", userID)
 	// I Will Set This Data To Notificaion (...)
 	// I Will Check If The User It's Already Have This Notificaion !!
 	// CHECKER HER !!
 
-	id, err := AddNotification_Group(creatorID, userID, "request_join_groub", message, req.GroupID)
+	id, err := AddNotification_Group(creatorID, userID, "group_join_request", message, req.GroupID)
 	if err != nil {
-		http.Error(w, "Internal_server_error", http.StatusInternalServerError)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
-	// <<====>>
-	Notif, err := GetNotificationByID(int(id))
-	if err != nil {
-		http.Error(w, "INTERNAL_SERVER_ERROR", http.StatusInternalServerError)
+
+	notif, err := GetNotificationByID(int(id))
+	if err == nil && notif != nil {
+		notificationgoroutine.SendNotification(*notif)
 	}
-	// That's the notification who will go to the owner of groube
-	notificationgoroutine.SendNotification(*Notif)
-	//w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "Join request received!")
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"group_id": req.GroupID,
+		"state":    "requested",
+	})
 	// Her I Will Need To Get The Information About This Notificaion To Send It To The One Who Will Take Notificaion
 	// <<==(.!.)==>>
 	// The Current User_Id ...
@@ -86,7 +151,14 @@ func AddNotification_Group(userID int, senderID int, notifType string, message s
 		return 0, fmt.Errorf("failed to check existing notification: %v", err)
 	}
 	if existingID != 0 {
-		// Already exesist !!
+		_, err = repo.DB.Exec(`
+			UPDATE notifications
+			SET message = ?, state = 'unread', created_at = CURRENT_TIMESTAMP
+			WHERE id = ?
+		`, message, existingID)
+		if err != nil {
+			return 0, fmt.Errorf("failed to refresh existing notification: %v", err)
+		}
 		return existingID, nil
 	}
 	// Add New Notificaion <<===>>>

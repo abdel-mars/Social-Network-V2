@@ -1,73 +1,168 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Renderbar } from "../../components/bar/bar";
 import { Renderformpost } from "../../components/createpost/Createpost";
 import { RenderPosts } from "../../components/posts/post";
 import GroupCard from "../../components/groupcard/groupcard";
-import { PenSquare, Users } from "lucide-react";
+import { PenSquare, Users, UserPlus, LogOut, Trash2, TriangleAlert, X } from "lucide-react";
 import styles from "./groupdetail.module.css";
+import InviteFriendsModal from "../../components/inviteFriends/inviteFriends";
+import Toast from "../../components/ui/Toast";
+import { useNotifications } from "../../components/notifications/NotificationsContext";
 // use global styles where handy if needed, but groupdetail.module.css is primary
 
 export default function GroupDetailsPage() {
   const { id } = useParams();
+  const router = useRouter();
+  const { notifications, markNotificationsRead, removeNotifications } = useNotifications();
   const [group, setGroup] = useState(null);
   const [groupe_id, setGroupe_id] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [IsMember, setIsMember] = useState(false);
+  const [inviteState, setInviteState] = useState(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const redirectToGroupsWithToast = (message, type = "success") => {
+    window.sessionStorage.setItem("groupsToast", JSON.stringify({ message, type }));
+    router.replace("/groups");
+  };
+
+  const fetchGroup = async ({ redirectIfMissing = false } = {}) => {
+    try {
+      const res = await fetch(`http://localhost:8080/Get_Group_By_ID?id=${id}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        if (redirectIfMissing) {
+          redirectToGroupsWithToast("This group was deleted by the admin.", "error");
+          return;
+        }
+        throw new Error("Failed to fetch group details");
+      }
+      const data = await res.json();
+      setIsMember(data.group.is_member);
+      setPosts(data.posts || []);
+      setInviteState(data.group.member_status);
+      setGroup(data);
+      setGroupe_id(data.group);
+    } catch (err) {
+      console.error(err);
+      setToast({ message: "Failed to load group details.", type: "error" });
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("http://localhost:8080/group/leave", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ group_id: Number(id) }),
+      });
+      if (!res.ok) throw new Error("Failed to leave group");
+      redirectToGroupsWithToast("You left the group successfully.", "success");
+    } catch (err) {
+      console.error(err);
+      setToast({ message: "Failed to leave the group.", type: "error" });
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("http://localhost:8080/group/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ group_id: Number(id) }),
+      });
+      if (!res.ok) throw new Error("Failed to delete group");
+      redirectToGroupsWithToast("Group deleted successfully.", "success");
+    } catch (err) {
+      console.error(err);
+      setToast({ message: "Failed to delete the group.", type: "error" });
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
+    }
+  };
 
   useEffect(() => {
-    async function fetchGroup() {
-      try {
-        const res = await fetch(`http://localhost:8080/Get_Group_By_ID?id=${id}`, {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Failed to fetch group details");
-        const data = await res.json();
-        setIsMember(data.group.is_member);
-        setGroup(data);
-        setGroupe_id(data.group);
-      } catch (err) {
-        console.error(err);
-      }
-    }
+    const storedUserId = window.localStorage.getItem("userId");
+    setCurrentUserId(storedUserId ? Number(storedUserId) : null);
     fetchGroup();
   }, [id]);
 
-  const handleCreatePost = async (e) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !newContent.trim()) return;
-    const formData = new FormData();
-    formData.append("title", newTitle);
-    formData.append("content", newContent);
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
-    formData.append("group_id", id);
+  useEffect(() => {
+    if (!group) return;
+
+    const intervalId = window.setInterval(() => {
+      fetchGroup({ redirectIfMissing: true });
+    }, 8000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchGroup({ redirectIfMissing: true });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [group, id]);
+
+  const handleInviteResponse = async (newState) => {
+    setInviteLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/Createpost", {
+      const res = await fetch("http://localhost:8080/group/invite/respond", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: formData,
+        body: JSON.stringify({ group_id: Number(id), state: newState }),
       });
       if (!res.ok) {
-        const err = await res.text();
-        alert("Error: " + err);
-        return;
+        const errText = await res.text();
+        throw new Error(errText || "Failed to respond to invitation");
       }
       const data = await res.json();
-      setPosts([data, ...posts]);
-      setNewTitle("");
-      setNewContent("");
-      setImageFile(null);
-      setIsModalOpen(false);
+      setInviteState(data.state);
+      if (data.state === "accept") {
+        setIsMember(true);
+      }
+      const inviteNotificationIds = notifications
+        .filter(
+          (notification) =>
+            notification.type === "group_invitation" && notification.group_id === Number(id)
+        )
+        .map((notification) => notification.id);
+
+      if (inviteNotificationIds.length > 0) {
+        await markNotificationsRead(inviteNotificationIds);
+        removeNotifications(inviteNotificationIds);
+      }
+      await fetchGroup();
     } catch (err) {
-      console.error("Failed to create post:", err);
+      console.error(err);
+    } finally {
+      setInviteLoading(false);
     }
   };
 
@@ -81,6 +176,24 @@ export default function GroupDetailsPage() {
   }
 
   const { group: g, members } = group;
+  const isCreator = g.creator_id === currentUserId;
+  const confirmConfig = confirmAction === "delete"
+    ? {
+        title: "Delete this group?",
+        description: "This will permanently remove the group, its posts, and access for every member.",
+        confirmLabel: "Delete Group",
+        icon: <Trash2 size={18} />,
+        confirmClass: styles.confirmDanger,
+      }
+    : confirmAction === "leave"
+      ? {
+          title: "Leave this group?",
+          description: "You will lose access to the group feed until you join again.",
+          confirmLabel: "Leave Group",
+          icon: <LogOut size={18} />,
+          confirmClass: styles.confirmWarn,
+        }
+      : null;
 
   return (
     <div className={styles.pageRoot}>
@@ -90,11 +203,55 @@ export default function GroupDetailsPage() {
         {/* Main Feed Column */}
         <div className={styles.mainCol}>
           <div className={styles.groupHeader}>
-            <div>
+            <div className={styles.groupHeaderMeta}>
               <h1 className={styles.groupTitle}>{g.title}</h1>
-              <span className={styles.adminTag}>Admin: {g.admin.username}</span>
+              <div className={styles.groupSubhead}>
+                <span className={styles.adminTag}>Admin: {g.admin.username}</span>
+                <span className={styles.privacyTag}>{g.privacy}</span>
+              </div>
+            </div>
+            <div className={styles.groupActions}>
+              {IsMember && (
+                <button
+                  className={styles.inviteFriendsBtn}
+                  onClick={() => setIsInviteModalOpen(true)}
+                >
+                  <UserPlus size={16} />
+                  Invite Friends
+                </button>
+              )}
+              {IsMember && !isCreator && (
+                <button className={styles.leaveBtn} onClick={() => setConfirmAction("leave")}>
+                  <LogOut size={16} /> Leave Group
+                </button>
+              )}
+              {isCreator && (
+                <button className={styles.deleteBtn} onClick={() => setConfirmAction("delete")}>
+                  <Trash2 size={16} />
+                  Delete Group
+                </button>
+              )}
             </div>
           </div>
+
+          {g.member_status === "invited" && !IsMember && (
+            <div className={styles.invitePanel}>
+              <p className={styles.inviteText}>
+                You have been invited to join this group. Accept to become a member or decline to ignore the invitation.
+              </p>
+              <div className={styles.inviteActions}>
+                <button className={styles.acceptBtn} disabled={inviteLoading} onClick={() => handleInviteResponse("accept")}>Accept</button>
+                <button className={styles.rejectBtn} disabled={inviteLoading} onClick={() => handleInviteResponse("reject")}>Decline</button>
+              </div>
+            </div>
+          )}
+          {g.member_status === "requested" && !IsMember && (
+            <div className={styles.requestedPanel}>
+              <p className={styles.requestedText}>
+                Your join request has been sent. The group owner will review it shortly.
+              </p>
+            </div>
+          )}
 
           {!IsMember ? (
             <>
@@ -162,6 +319,60 @@ export default function GroupDetailsPage() {
           onClose={() => setIsModalOpen(false)}
           imageFile={imageFile}
           setImageFile={setImageFile}
+        />
+      )}
+
+      {isInviteModalOpen && (
+        <InviteFriendsModal
+          groupId={id}
+          onClose={() => setIsInviteModalOpen(false)}
+          onInviteSent={() => {
+            setIsInviteModalOpen(false);
+            setToast({ message: "Invitations sent successfully.", type: "success" });
+          }}
+        />
+      )}
+
+      {confirmConfig && (
+        <div className={styles.confirmOverlay} onClick={() => !actionLoading && setConfirmAction(null)}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <button
+              className={styles.confirmClose}
+              onClick={() => !actionLoading && setConfirmAction(null)}
+              disabled={actionLoading}
+            >
+              <X size={18} />
+            </button>
+            <div className={styles.confirmIcon}>
+              {confirmConfig.icon || <TriangleAlert size={18} />}
+            </div>
+            <h3 className={styles.confirmTitle}>{confirmConfig.title}</h3>
+            <p className={styles.confirmText}>{confirmConfig.description}</p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmSecondary}
+                onClick={() => setConfirmAction(null)}
+                disabled={actionLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className={`${styles.confirmPrimary} ${confirmConfig.confirmClass}`}
+                onClick={confirmAction === "delete" ? handleDeleteGroup : handleLeaveGroup}
+                disabled={actionLoading}
+              >
+                {actionLoading ? "Please wait..." : confirmConfig.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
     </div>

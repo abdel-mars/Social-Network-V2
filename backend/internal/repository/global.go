@@ -30,6 +30,7 @@ type Notification struct {
 		Avatar    string `json:"avatar"`
 	} `json:"sender"`
 	ReceiverIsPrivate bool   `json:"receiver_is_private"`
+	IsFollowingSender bool   `json:"is_following_sender"`
 	GroupTitle        string `json:"group_title"`
 	GroupID           int    `json:"group_id"`
 }
