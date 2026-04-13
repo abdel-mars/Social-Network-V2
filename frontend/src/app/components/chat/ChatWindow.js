@@ -10,23 +10,35 @@ import style from "./chat.module.css";
 export default function ChatWindow({ conversation, messages, setMessages, onSendMessage, onSendTyping, isTyping, onBack }) {
   const { unreadCounts } = useChat();
   const [loading, setLoading] = useState(false);
+  const [loadMoreLoading, setLoadMoreLoading] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const scrollRef = useRef(null);
+  const prevScrollHeightRef = useRef(0);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (!conversation) return;
-    async function fetchHistory() {
+    setOffset(0);
+    setHasMore(true);
+    setMessages([]);
+    isInitialLoad.current = true;
+
+    async function fetchInitialHistory() {
       setLoading(true);
       try {
         const url = conversation.group_id
-          ? `http://localhost:8080/group/chat/messages?group_id=${conversation.group_id}`
-          : `http://localhost:8080/chat/messages?with=${conversation.user_id}`;
+          ? `http://localhost:8080/group/chat/messages?group_id=${conversation.group_id}&limit=30&offset=0`
+          : `http://localhost:8080/chat/messages?with=${conversation.user_id}&limit=30&offset=0`;
 
-        const res = await fetch(url, {
-          credentials: "include",
-        });
+        const res = await fetch(url, { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           setMessages(data || []);
+          setOffset((data || []).length);
+          if (!data || data.length < 30) {
+            setHasMore(false);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch history:", err);
@@ -34,16 +46,66 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
         setLoading(false);
       }
     }
-    fetchHistory();
+    fetchInitialHistory();
   }, [conversation, setMessages]);
+
+  const loadMoreMessages = async () => {
+    if (loadMoreLoading || !hasMore || !conversation) return;
+
+    setLoadMoreLoading(true);
+    if (scrollRef.current) {
+      prevScrollHeightRef.current = scrollRef.current.scrollHeight;
+    }
+
+    try {
+      const url = conversation.group_id
+        ? `http://localhost:8080/group/chat/messages?group_id=${conversation.group_id}&limit=30&offset=${offset}`
+        : `http://localhost:8080/chat/messages?with=${conversation.user_id}&limit=30&offset=${offset}`;
+
+      const res = await fetch(url, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          setMessages(prev => [...data, ...prev]);
+          setOffset(prev => prev + data.length);
+          if (data.length < 30) {
+            setHasMore(false);
+          }
+        } else {
+          setHasMore(false);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load more messages:", err);
+    } finally {
+      setLoadMoreLoading(false);
+    }
+  };
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    // Load more when user scrolls near the top (e.g., within 200px)
+    if (scrollRef.current.scrollTop < 200 && hasMore && !loadMoreLoading && !loading) {
+      loadMoreMessages();
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
-      // Use a small timeout to ensure layout is updated before scrolling
-      const timer = setTimeout(() => {
+      if (isInitialLoad.current && messages.length > 0) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }, 50);
-      return () => clearTimeout(timer);
+        isInitialLoad.current = false;
+      } else if (prevScrollHeightRef.current > 0) {
+        const newScrollHeight = scrollRef.current.scrollHeight;
+        scrollRef.current.scrollTop = newScrollHeight - prevScrollHeightRef.current;
+        prevScrollHeightRef.current = 0;
+      } else {
+        // Only scroll to bottom for typing or new messages if we are already near bottom
+        const isNearBottom = scrollRef.current.scrollHeight - scrollRef.current.scrollTop - scrollRef.current.clientHeight < 100;
+        if (isNearBottom) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }
     }
   }, [messages, isTyping]);
 
@@ -92,7 +154,12 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
       </header>
 
       {/* Messages */}
-      <div className={style.messageList} ref={scrollRef}>
+      <div className={style.messageList} ref={scrollRef} onScroll={handleScroll}>
+        {loadMoreLoading && (
+          <div className={style.loadMoreSpinner}>
+            <div className={style.spinnerSmall} />
+          </div>
+        )}
         {loading ? (
           <div className={style.historyLoading}><div className={style.spinner} /></div>
         ) : messages.length === 0 ? (

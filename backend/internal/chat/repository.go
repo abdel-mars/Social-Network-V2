@@ -35,7 +35,7 @@ func SaveMessage(senderID, recipientID int, content string) (Message, error) {
 	return m, err
 }
 
-func GetHistory(userA, userB int, limit int) ([]Message, error) {
+func GetHistory(userA, userB int, limit, offset int) ([]Message, error) {
 	rows, err := repo.DB.Query(`
 		SELECT m.id, m.sender_id, m.recipient_id, m.content, m.sent_at, m.is_read, u.username, u.avatar
 		FROM messages m
@@ -43,8 +43,8 @@ func GetHistory(userA, userB int, limit int) ([]Message, error) {
 		WHERE (m.sender_id = ? AND m.recipient_id = ?)
 		   OR (m.sender_id = ? AND m.recipient_id = ?)
 		ORDER BY m.sent_at DESC
-		LIMIT ?
-	`, userA, userB, userB, userA, limit)
+		LIMIT ? OFFSET ?
+	`, userA, userB, userB, userA, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -184,15 +184,15 @@ func SaveGroupMessage(groupID, senderID int, content string) (Message, error) {
 	return m, err
 }
 
-func GetGroupHistory(groupID int, limit int) ([]Message, error) {
+func GetGroupHistory(groupID int, limit, offset int) ([]Message, error) {
 	rows, err := repo.DB.Query(`
 		SELECT m.id, m.sender_id, m.group_id, m.content, m.sent_at, u.username, u.avatar
 		FROM group_messages m
 		JOIN users u ON m.sender_id = u.id
 		WHERE m.group_id = ?
 		ORDER BY m.sent_at DESC
-		LIMIT ?
-	`, groupID, limit)
+		LIMIT ? OFFSET ?
+	`, groupID, limit, offset)
 	if err != nil {
 		return nil, err
 	}

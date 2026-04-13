@@ -35,12 +35,18 @@ func GetGroupChatHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	limitStr := r.URL.Query().Get("limit")
-	limit := 100
+	limit := 10
 	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
 		limit = l
 	}
 
-	messages, err := chat.GetGroupHistory(groupID, limit)
+	offsetStr := r.URL.Query().Get("offset")
+	offset := 0
+	if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+		offset = o
+	}
+
+	messages, err := chat.GetGroupHistory(groupID, limit, offset)
 	if err != nil {
 		http.Error(w, "Failed to fetch history", http.StatusInternalServerError)
 		return

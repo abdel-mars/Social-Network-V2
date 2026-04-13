@@ -59,7 +59,19 @@ func GetHistoryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	history, err := GetHistory(userID, withID, 50)
+	limitStr := r.URL.Query().Get("limit")
+	limit := 10
+	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+		limit = l
+	}
+
+	offsetStr := r.URL.Query().Get("offset")
+	offset := 0
+	if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+		offset = o
+	}
+
+	history, err := GetHistory(userID, withID, limit, offset)
 	if err != nil {
 		http.Error(w, "Failed to load history", http.StatusInternalServerError)
 		return
