@@ -74,6 +74,24 @@ func (h *Hub) Run() {
 						}
 					}
 				}
+			} else if message.Type == "group_chat" {
+				// Broadcast to all group members
+				members, err := GetGroupMembers(message.GroupID)
+				if err != nil {
+					fmt.Printf("[Chat] failed to get group members for broadcasting: %v\n", err)
+					h.mu.RUnlock()
+					continue
+				}
+				for _, memberID := range members {
+					if userClients, ok := h.clients[memberID]; ok {
+						for client := range userClients {
+							select {
+							case client.send <- data:
+							default:
+							}
+						}
+					}
+				}
 			} else {
 				// Send to all recipient's active sessions
 				if userClients, ok := h.clients[message.RecipientID]; ok {
