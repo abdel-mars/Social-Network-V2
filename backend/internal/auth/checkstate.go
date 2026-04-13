@@ -8,7 +8,7 @@ import (
 
 func CheckState(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
-	if err != nil { 
+	if err != nil {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
 			"authenticated": false,
@@ -24,9 +24,9 @@ func CheckState(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	json.NewEncoder(w).Encode(map[string]any{
 		"authenticated": true,
-		"userID":        id,
+		"user_id":       id,
 	})
 }

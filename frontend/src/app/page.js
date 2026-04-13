@@ -32,6 +32,7 @@ export default function LoginPage() {
         });
         const data = await res.json();
         if (res.ok && data.authenticated) {
+          localStorage.setItem("userId", data.user_id);
           setDetect(true);
           router.push("/home");
         }
@@ -95,9 +96,9 @@ export default function LoginPage() {
           <div className={styles.cardLogo}>
             <div className={styles.logoRing}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15"/>
-                <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35"/>
-                <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
+                <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35" />
+                <circle cx="12" cy="12" r="3" fill="currentColor" />
               </svg>
             </div>
             <h1 className={styles.logoTitle}>01Social</h1>
