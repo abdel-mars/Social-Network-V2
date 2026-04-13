@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { ArrowLeft, MessageSquare } from "lucide-react";
+import { ArrowLeft, MessageSquare, Users } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
+import { useChat } from "./ChatContext";
 import style from "./chat.module.css";
 
 export default function ChatWindow({ conversation, messages, setMessages, onSendMessage, onSendTyping, isTyping, onBack }) {
+  const { unreadCounts } = useChat();
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
 
@@ -15,7 +17,11 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
     async function fetchHistory() {
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:8080/chat/messages?with=${conversation.user_id}`, {
+        const url = conversation.group_id
+          ? `http://localhost:8080/group/chat/messages?group_id=${conversation.group_id}`
+          : `http://localhost:8080/chat/messages?with=${conversation.user_id}`;
+
+        const res = await fetch(url, {
           credentials: "include",
         });
         if (res.ok) {
@@ -62,17 +68,25 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
           <ArrowLeft size={20} />
         </button>
         <div className={style.headerAvatarWrapper}>
-          <img
-            src={conversation.avatar ? `http://localhost:8080/${conversation.avatar}` : "/default-avatar.png"}
-            alt={conversation.username}
-            className={style.headerAvatar}
-            onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
-          />
+          {conversation.group_id ? (
+            <div className={style.groupAvatarPlaceholder}>
+              <Users size={20} />
+            </div>
+          ) : (
+            <img
+              src={conversation.avatar ? `http://localhost:8080/${conversation.avatar}` : "/default-avatar.png"}
+              alt={conversation.username}
+              className={style.headerAvatar}
+              onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
+            />
+          )}
         </div>
         <div className={style.headerInfo}>
-          <h4 className={style.headerName}>{conversation.username}</h4>
-          <span className={conversation.is_online ? style.onlineText : style.offlineText}>
-            {conversation.is_online ? "Active now" : "Offline"}
+          <h4 className={style.headerName}>
+            {conversation.group_id ? ` ${conversation.username}` : conversation.username}
+          </h4>
+          <span className={conversation.group_id ? style.onlineText : (conversation.is_online ? style.onlineText : style.offlineText)}>
+            {conversation.group_id ? `${conversation.online_count || 0} members online` : (conversation.is_online ? "Active now" : "Offline")}
           </span>
         </div>
       </header>
