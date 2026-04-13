@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"social-network-backend/internal/chat"
 	repo "social-network-backend/internal/repository"
 )
 
@@ -13,6 +14,8 @@ type DataGroups struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Privacy     string `json:"privacy"`
+	Avatar      string `json:"avatar"`
+	OnlineCount int    `json:"online_count"`
 	UserStatus  string `json:"user_status"`
 }
 
@@ -27,7 +30,7 @@ func Get_Groups(w http.ResponseWriter, r *http.Request) {
 	}
 	db := repo.DB
 	rows, err := db.Query(`
-		SELECT g.id, g.title, g.description, g.privacy, gm.status
+		SELECT g.id, g.title, g.description, g.privacy, g.avatar, gm.status
 		FROM groups g
 		LEFT JOIN (
 			SELECT group_id, status
@@ -48,7 +51,7 @@ func Get_Groups(w http.ResponseWriter, r *http.Request) {
 		var status sql.NullString
 		var privacy string
 
-		err := rows.Scan(&group.Id, &group.Name, &group.Description, &privacy, &status)
+		err := rows.Scan(&group.Id, &group.Name, &group.Description, &privacy, &group.Avatar, &status)
 		if err != nil {
 			http.Error(w, "Error scanning group", http.StatusInternalServerError)
 			fmt.Println("Scan Error:", err)
@@ -60,6 +63,19 @@ func Get_Groups(w http.ResponseWriter, r *http.Request) {
 			group.UserStatus = "not_member"
 		}
 		group.Privacy = privacy
+
+		// Calculate online count
+		if chat.ChatHub != nil {
+			members, err := chat.GetGroupMembers(group.Id)
+			if err == nil {
+				for _, memberID := range members {
+					if chat.ChatHub.IsUserOnline(memberID) {
+						group.OnlineCount++
+					}
+				}
+			}
+		}
+
 		groups = append(groups, group)
 	}
 	w.Header().Set("Content-Type", "application/json")
