@@ -15,37 +15,16 @@ func SelectUserSession(session_id string) (int, bool, error) {
 	if err != nil {
 		return userId, false, err
 	}
-	return userId, true, nil 
+	return userId, true, nil
 }
 
 func UpdateUserSession(id int, token string) error {
-	tx, err := repo.DB.Begin()
-	if err != nil {
-		log.Println("Failed to start transaction:", err)
-		return err
-	}
-	res, err := tx.Exec(repo.UPDATE_SESSION_EXPIRING_TIME, token, id)
-	if err != nil {
-		log.Println("Update error:", err)
-		tx.Rollback()
-		return err
-	}
-	count, err := res.RowsAffected()
-	if err != nil {
-		log.Println("Error getting affected rows:", err)
-		tx.Rollback()
-		return err
-	}
-	if count > 0 {
-		return tx.Commit() // if update succed
-	}
-	_, err = tx.Exec(repo.INSERT_NEW_SESSION, id, token)
+	_, err := repo.DB.Exec(repo.INSERT_NEW_SESSION, id, token)
 	if err != nil {
 		log.Println("Insert error:", err)
-		tx.Rollback()
 		return err
 	}
-	return tx.Commit()
+	return nil
 }
 
 func ResetUserSession(session_id string) (bool, error) {
@@ -80,16 +59,16 @@ func GetUserHashByUsername(username string) (int, string, error) {
 	}
 	return id, hash, nil
 }
- 
+
 func GetUserInfo(userId int) (repo.User, error) {
 	var user repo.User
-	
+
 	var age sql.NullInt64
 	var gender sql.NullString
 	var nickname sql.NullString
 	var about sql.NullString
 	var avatar sql.NullString
-	var isPrivate sql.NullBool  // Changed from sql.NullInt64 to sql.NullBool
+	var isPrivate sql.NullBool // Changed from sql.NullInt64 to sql.NullBool
 
 	err := repo.DB.QueryRow(repo.SELECT_USER_BY_ID, userId).Scan(
 		&user.ID,
@@ -104,9 +83,9 @@ func GetUserInfo(userId int) (repo.User, error) {
 		&avatar,
 		&user.CreatedAt,
 		&user.UpdatedAt,
-		&isPrivate,  // Now using sql.NullBool
+		&isPrivate, // Now using sql.NullBool
 	)
-	
+
 	if err != nil {
 		return user, err
 	}
@@ -141,18 +120,18 @@ func GetUserInfo(userId int) (repo.User, error) {
 }
 
 /*
-func AddNewUser(username, email, hashedPass string) error {
-	_, err := repo.DB.Exec(repo.INSERT_USERNAME_EMAIL_PASSHASH, username, email, hashedPass)
+	func AddNewUser(username, email, hashedPass string) error {
+		_, err := repo.DB.Exec(repo.INSERT_USERNAME_EMAIL_PASSHASH, username, email, hashedPass)
+		return err
+	}
+*/
+func AddNewUser(username, email, hashedPass, firstName, lastName, gender string, age int, nickname, about, avatar string) error {
+	_, err := repo.DB.Exec(
+		repo.INSERT_USERNAME_EMAIL_PASSHASH,
+		username, email, hashedPass, firstName, lastName, age, gender, nickname, about, avatar,
+	)
 	return err
 }
- */
-func AddNewUser(username, email, hashedPass, firstName, lastName, gender string, age int, nickname, about, avatar string) error {
-    _, err := repo.DB.Exec(
-        repo.INSERT_USERNAME_EMAIL_PASSHASH,
-        username, email, hashedPass, firstName, lastName, age, gender, nickname, about, avatar,
-    )
-    return err
-} 
 
 func GetUserHashById(id int) (string, error) {
 	var hash string
@@ -218,12 +197,12 @@ func DeleteUser(userId int) error {
 	//err = UpdateCatCount()
 	//if err != nil {
 	//	return err
-//	}
+	//	}
 	return nil
 }
 
 func GetUserNameById(userId int) (string, error) {
-	var userName string	
+	var userName string
 	err := repo.DB.QueryRow(repo.SELECT_USERNAME_BY_ID, userId).Scan(&userName)
 	if err != nil {
 		return userName, err
