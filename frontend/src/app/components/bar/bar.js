@@ -91,7 +91,7 @@ export function Renderbar() {
                 >
                   <div className={chatStyle.headerBadgeWrapper}>
                     <Icon size={18} strokeWidth={2.2} />
-                    {label === "Chat" && totalUnreadCount > 0 && (
+                    {label === "Chat" && pathname !== "/chat" && totalUnreadCount > 0 && (
                       <span className={chatStyle.headerBadge}>
                         {totalUnreadCount > 9 ? "+9" : totalUnreadCount}
                       </span>
