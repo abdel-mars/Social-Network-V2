@@ -12,6 +12,7 @@ type Group_info struct {
 	Title       string
 	Description string
 	Privacy     string `json:"privacy,omitempty"`
+	Avatar      string `json:"avatar,omitempty"`
 }
 
 func Create_Group(w http.ResponseWriter, r *http.Request) {
@@ -53,12 +54,16 @@ func Create_Group(w http.ResponseWriter, r *http.Request) {
 		"title":       req.Title,
 		"description": req.Description,
 		"privacy":     req.Privacy,
+		"avatar":      req.Avatar,
 		"user_status": "member",
 	})
 }
 
 func Insert_group(Req Group_info, userID int) (int64, error) {
-	howa, err := repo.DB.Exec(`INSERT INTO groups (title, description, privacy, creator_id) VALUES (?, ?, ?, ?)`, Req.Title, Req.Description, Req.Privacy, userID)
+	if Req.Avatar == "" {
+		Req.Avatar = "uploads/group-avatar.png"
+	}
+	howa, err := repo.DB.Exec(`INSERT INTO groups (title, description, privacy, creator_id, avatar) VALUES (?, ?, ?, ?, ?)`, Req.Title, Req.Description, Req.Privacy, userID, Req.Avatar)
 	if err != nil {
 		return 0, err
 	}
