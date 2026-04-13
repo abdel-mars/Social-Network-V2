@@ -6,7 +6,8 @@ import { Renderbar } from "../../components/bar/bar";
 import { Renderformpost } from "../../components/createpost/Createpost";
 import { RenderPosts } from "../../components/posts/post";
 import GroupCard from "../../components/groupcard/groupcard";
-import { PenSquare, Users, UserPlus, LogOut, Trash2, TriangleAlert, X } from "lucide-react";
+import Link from "next/link";
+import { PenSquare, Users, UserPlus, LogOut, Trash2, TriangleAlert, X, MessageSquare } from "lucide-react";
 import styles from "./groupdetail.module.css";
 import InviteFriendsModal from "../../components/inviteFriends/inviteFriends";
 import Toast from "../../components/ui/Toast";
@@ -214,20 +215,20 @@ export default function GroupDetailsPage() {
   const isCreator = g.creator_id === currentUserId;
   const confirmConfig = confirmAction === "delete"
     ? {
-        title: "Delete this group?",
-        description: "This will permanently remove the group, its posts, and access for every member.",
-        confirmLabel: "Delete Group",
-        icon: <Trash2 size={18} />,
-        confirmClass: styles.confirmDanger,
-      }
+      title: "Delete this group?",
+      description: "This will permanently remove the group, its posts, and access for every member.",
+      confirmLabel: "Delete Group",
+      icon: <Trash2 size={18} />,
+      confirmClass: styles.confirmDanger,
+    }
     : confirmAction === "leave"
       ? {
-          title: "Leave this group?",
-          description: "You will lose access to the group feed until you join again.",
-          confirmLabel: "Leave Group",
-          icon: <LogOut size={18} />,
-          confirmClass: styles.confirmWarn,
-        }
+        title: "Leave this group?",
+        description: "You will lose access to the group feed until you join again.",
+        confirmLabel: "Leave Group",
+        icon: <LogOut size={18} />,
+        confirmClass: styles.confirmWarn,
+      }
       : null;
 
   return (
@@ -246,6 +247,15 @@ export default function GroupDetailsPage() {
               </div>
             </div>
             <div className={styles.groupActions}>
+              {IsMember && (
+                <Link
+                  href={`/chat?group_id=${id}`}
+                  className={styles.chatBtn}
+                >
+                  <MessageSquare size={16} />
+                  Group Chat
+                </Link>
+              )}
               {IsMember && (
                 <button
                   className={styles.inviteFriendsBtn}
