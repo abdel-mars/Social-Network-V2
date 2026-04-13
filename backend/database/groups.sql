@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS groups (
     description TEXT,
     creator_id INTEGER NOT NULL,
     privacy TEXT NOT NULL DEFAULT 'Public',
+    avatar TEXT DEFAULT 'uploads/group-avatar.png',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (creator_id) REFERENCES users(id)
 );
@@ -13,6 +14,7 @@ CREATE TABLE IF NOT EXISTS group_members (
     group_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     status TEXT CHECK(status IN ('member', 'invited', 'requested', 'declined')),
+    last_seen_message_id INTEGER DEFAULT 0,
     FOREIGN KEY (group_id) REFERENCES groups(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
