@@ -117,3 +117,30 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+// BroadcastToGroup sends an event to all connected members of a group.
+func BroadcastToGroup(groupID int, v any) {
+	// 1. Get all members of the group
+	rows, err := key.DB.Query(`SELECT user_id FROM group_members WHERE group_id = ? AND status = 'member'`, groupID)
+	if err != nil {
+		fmt.Println("[SSE] failed to get group members:", err)
+		return
+	}
+	defer rows.Close()
+
+	// 2. Marshal data once
+	data, err := json.Marshal(v)
+	if err != nil {
+		fmt.Println("[SSE] marshal error:", err)
+		return
+	}
+
+	// 3. Send to each member who is currently connected
+	for rows.Next() {
+		var userID int
+		if err := rows.Scan(&userID); err != nil {
+			continue
+		}
+		Send(userID, data)
+	}
+}
