@@ -259,3 +259,23 @@ func UpdateGroupLastSeen(groupID, userID int) error {
 	`, lastMsgID, groupID, userID)
 	return err
 }
+
+func GetUserGroups(userID int) ([]int, error) {
+	rows, err := repo.DB.Query(`
+		SELECT group_id FROM group_members WHERE user_id = ? AND status = 'member'
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var groupIDs []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		groupIDs = append(groupIDs, id)
+	}
+	return groupIDs, nil
+}

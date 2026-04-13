@@ -38,6 +38,7 @@ func (h *Hub) Run() {
 			if isFirst {
 				fmt.Printf("[Chat] User %d connected\n", client.userID)
 				h.broadcastStatus(client.userID, true)
+				go h.broadcastGroupOnlineCount(client.userID)
 			}
 
 		case client := <-h.unregister:
@@ -51,6 +52,7 @@ func (h *Hub) Run() {
 						h.mu.Unlock()
 						fmt.Printf("[Chat] User %d disconnected\n", client.userID)
 						h.broadcastStatus(client.userID, false)
+						go h.broadcastGroupOnlineCount(client.userID)
 					} else {
 						h.mu.Unlock()
 					}
@@ -148,6 +150,39 @@ func (h *Hub) BroadcastToUser(userID int, data []byte) {
 			case client.send <- data:
 			default:
 			}
+		}
+	}
+}
+
+func (h *Hub) broadcastGroupOnlineCount(userID int) {
+	groups, err := GetUserGroups(userID)
+	if err != nil {
+		fmt.Printf("[Chat] failed to get user groups for online count broadcast: %v\n", err)
+		return
+	}
+
+	for _, groupID := range groups {
+		members, err := GetGroupMembers(groupID)
+		if err != nil {
+			continue
+		}
+
+		onlineCount := 0
+		for _, memberID := range members {
+			if h.IsUserOnline(memberID) {
+				onlineCount++
+			}
+		}
+
+		msg := map[string]interface{}{
+			"type":         "group_online_count",
+			"group_id":     groupID,
+			"online_count": onlineCount,
+		}
+		data, _ := json.Marshal(msg)
+
+		for _, memberID := range members {
+			h.BroadcastToUser(memberID, data)
 		}
 	}
 }

@@ -78,6 +78,17 @@ export default function ChatPage() {
         return;
       }
 
+      if (data.type === "group_online_count") {
+        const { group_id, online_count } = data;
+        setConversations((prev) =>
+          prev.map((c) => (c.group_id === group_id ? { ...c, online_count } : c))
+        );
+        setSelectedConversation((prev) =>
+          prev && prev.group_id === group_id ? { ...prev, online_count } : prev
+        );
+        return;
+      }
+
       if (data.type === "typing") {
         const { sender_id, content } = data;
         setTypingUsers((prev) => ({
