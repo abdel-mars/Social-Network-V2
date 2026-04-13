@@ -49,10 +49,18 @@ func (c *Client) ReadPump() {
 		}
 
 		// Permission check
-		canChat, err := CanChat(c.userID, in.RecipientID)
-		if err != nil || !canChat {
-			fmt.Printf("[Chat] User %d blocked from chatting with %d\n", c.userID, in.RecipientID)
-			continue
+		if in.Type == "group_chat" {
+			canChat, err := CanGroupChat(c.userID, in.GroupID)
+			if err != nil || !canChat {
+				fmt.Printf("[Chat] User %d blocked from group %d chat\n", c.userID, in.GroupID)
+				continue
+			}
+		} else {
+			canChat, err := CanChat(c.userID, in.RecipientID)
+			if err != nil || !canChat {
+				fmt.Printf("[Chat] User %d blocked from chatting with %d\n", c.userID, in.RecipientID)
+				continue
+			}
 		}
 
 		// Handle typing status
@@ -74,7 +82,13 @@ func (c *Client) ReadPump() {
 		}
 
 		// Save to DB
-		msg, err := SaveMessage(c.userID, in.RecipientID, in.Content)
+		var msg Message
+		if in.Type == "group_chat" {
+			msg, err = SaveGroupMessage(in.GroupID, c.userID, in.Content)
+		} else {
+			msg, err = SaveMessage(c.userID, in.RecipientID, in.Content)
+		}
+
 		if err != nil {
 			fmt.Println("[Chat] failed to save message:", err)
 			continue
