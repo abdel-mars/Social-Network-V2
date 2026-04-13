@@ -37,7 +37,9 @@ export default function Home() {
         });
         if (res.ok) {
           const data = await res.json();
-          setPosts(data);
+          // Ensure unique posts by ID
+          const uniquePosts = Array.from(new Map(data.map(p => [p.id, p])).values());
+          setPosts(uniquePosts);
         }
       } catch (err) {
         console.error("Failed to fetch posts:", err);
@@ -68,7 +70,11 @@ export default function Home() {
         return;
       }
       const data = await res.json();
-      setPosts([data, ...posts]);
+      setPosts((prev) => {
+        // Prevent adding duplicate if post already exists in state
+        if (prev.find(p => p.id === data.id)) return prev;
+        return [data, ...prev];
+      });
       setNewTitle("");
       setNewContent("");
       setImageFile(null);
@@ -87,7 +93,7 @@ export default function Home() {
           onClose={() => setToast(null)}
         />
       )}
-      
+
       <Renderbar />
 
       <div className={style.pageContent}>
@@ -97,8 +103,8 @@ export default function Home() {
           <div className={style.createPrompt} onClick={() => setIsModalOpen(true)}>
             <div className={style.promptAvatar}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
               </svg>
             </div>
             <div className={style.promptText}>What's on your mind?</div>

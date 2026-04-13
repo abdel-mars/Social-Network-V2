@@ -70,13 +70,20 @@ export function ChatProvider({ children }) {
         const userId = localStorage.getItem("userId");
         if (!userId) return;
 
+        let isDestroyed = false;
         fetchUnreadCounts();
-
         const ws = new WebSocket("ws://localhost:8080/ws/chat");
         socketRef.current = ws;
         setSocket(ws);
 
+        ws.onopen = () => {
+            if (isDestroyed) {
+                ws.close();
+            }
+        };
+
         const handleMessage = (event) => {
+            if (isDestroyed) return;
             const data = JSON.parse(event.data);
             const currentUserId = parseInt(localStorage.getItem("userId"));
 
@@ -137,15 +144,25 @@ export function ChatProvider({ children }) {
             }
         };
 
+        // Use addEventListener for message to keep it consistent with previous code
         ws.addEventListener("message", handleMessage);
 
-        const handleUnload = () => ws.close();
+        const handleUnload = () => {
+            isDestroyed = true;
+            ws.close();
+        };
         window.addEventListener("beforeunload", handleUnload);
 
         return () => {
+            isDestroyed = true;
             window.removeEventListener("beforeunload", handleUnload);
             ws.removeEventListener("message", handleMessage);
-            ws.close();
+
+            // Only close if it's already open. 
+            // If it's CONNECTING, the onopen handler will close it once it establishes.
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
             setSocket(null);
         };
     }, [fetchUnreadCounts, pathname]);
