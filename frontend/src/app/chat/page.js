@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Renderbar } from "../components/bar/bar";
 import ConversationList from "../components/chat/ConversationList";
 import ChatWindow from "../components/chat/ChatWindow";
@@ -13,15 +14,49 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState([]);
   const [showList, setShowList] = useState(true);
   const [typingUsers, setTypingUsers] = useState({});
+  const [activeTab, setActiveTab] = useState("direct");
   const selectedConvRef = useRef(null);
-  const { socket, markAsRead } = useChat();
+  const { socket, markAsRead, setActiveChatId } = useChat();
+
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     selectedConvRef.current = selectedConversation;
     if (selectedConversation) {
-      markAsRead(selectedConversation.user_id);
+      const id = selectedConversation.group_id ? `group_${selectedConversation.group_id}` : selectedConversation.user_id;
+      setActiveChatId(id);
+      markAsRead(selectedConversation.user_id, selectedConversation.group_id);
+    } else {
+      setActiveChatId(null);
     }
-  }, [selectedConversation, markAsRead]);
+  }, [selectedConversation, markAsRead, setActiveChatId]);
+
+  useEffect(() => {
+    if (conversations.length > 0) {
+      const groupId = searchParams.get("group_id");
+      const userId = searchParams.get("user_id");
+
+      if (groupId) {
+        const group = conversations.find(c => c.group_id === parseInt(groupId));
+        if (group) {
+          setSelectedConversation(group);
+          setActiveTab("groups");
+          setShowList(false);
+          // Clear URL parameters
+          window.history.replaceState({}, "", "/chat");
+        }
+      } else if (userId) {
+        const user = conversations.find(c => c.user_id === parseInt(userId));
+        if (user) {
+          setSelectedConversation(user);
+          setActiveTab("direct");
+          setShowList(false);
+          // Clear URL parameters
+          window.history.replaceState({}, "", "/chat");
+        }
+      }
+    }
+  }, [searchParams, conversations]);
 
   useEffect(() => {
     if (!socket) return;
@@ -65,12 +100,41 @@ export default function ChatPage() {
         return;
       }
 
+      if (data.type === "group_chat") {
+        const msg = data;
+        setMessages((prev) => {
+          const currentConv = selectedConvRef.current;
+          if (currentConv && currentConv.group_id === msg.group_id) {
+            markAsRead(undefined, msg.group_id);
+            return [...prev, msg];
+          }
+          return prev;
+        });
+
+        setConversations((prev) => {
+          const index = prev.findIndex((c) => c.group_id === msg.group_id);
+          let updatedConversations = [...prev];
+          if (index !== -1) {
+            const updated = {
+              ...updatedConversations[index],
+              last_message: msg.content,
+              last_sent_at: msg.sent_at,
+            };
+            updatedConversations.splice(index, 1);
+            updatedConversations.unshift(updated);
+          }
+          return updatedConversations;
+        });
+        return;
+      }
+
       const msg = data;
       setMessages((prev) => {
         const currentConv = selectedConvRef.current;
         if (
           currentConv &&
-          (msg.recipient_id === currentConv.user_id || msg.sender_id === currentConv.user_id)
+          (msg.recipient_id === currentConv.user_id || msg.sender_id === currentConv.user_id) &&
+          !currentConv.group_id // Ensure it's not a group session
         ) {
           if (msg.sender_id === currentConv.user_id) {
             markAsRead(msg.sender_id);
@@ -104,17 +168,22 @@ export default function ChatPage() {
 
   const sendMessage = (content) => {
     if (socket?.readyState === WebSocket.OPEN && selectedConversation) {
-      socket.send(
-        JSON.stringify({
+      const payload = selectedConversation.group_id
+        ? {
+          type: "group_chat",
+          group_id: selectedConversation.group_id,
+          content: content,
+        }
+        : {
           recipient_id: selectedConversation.user_id,
           content: content,
-        })
-      );
+        };
+      socket.send(JSON.stringify(payload));
     }
   };
 
   const sendTypingStatus = (isTyping) => {
-    if (socket?.readyState === WebSocket.OPEN && selectedConversation) {
+    if (socket?.readyState === WebSocket.OPEN && selectedConversation && !selectedConversation.group_id) {
       socket.send(
         JSON.stringify({
           type: "typing",
@@ -130,6 +199,10 @@ export default function ChatPage() {
     setShowList(false);
   };
 
+  const selectedId = selectedConversation?.group_id
+    ? `group_${selectedConversation.group_id}`
+    : selectedConversation?.user_id;
+
   return (
     <div className={style.pageRoot}>
       <Renderbar />
@@ -140,8 +213,10 @@ export default function ChatPage() {
               conversations={conversations}
               setConversations={setConversations}
               onSelect={handleSelectConversation}
-              selectedId={selectedConversation?.user_id}
+              selectedId={selectedId}
               typingUsers={typingUsers}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
             />
           </div>
           <div className={`${style.windowWrapper} ${showList ? style.mobileHidden : ""}`}>
@@ -151,7 +226,7 @@ export default function ChatPage() {
               setMessages={setMessages}
               onSendMessage={sendMessage}
               onSendTyping={sendTypingStatus}
-              isTyping={selectedConversation ? !!typingUsers[selectedConversation.user_id] : false}
+              isTyping={selectedConversation?.user_id ? !!typingUsers[selectedConversation.user_id] : false}
               onBack={() => setShowList(true)}
             />
           </div>
