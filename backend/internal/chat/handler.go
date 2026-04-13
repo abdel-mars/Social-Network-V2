@@ -83,7 +83,18 @@ func GetConversationsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := range previews {
-		previews[i].IsOnline = ChatHub.IsUserOnline(previews[i].UserID)
+		if previews[i].GroupID > 0 {
+			members, err := GetGroupMembers(previews[i].GroupID)
+			if err == nil {
+				for _, memberID := range members {
+					if ChatHub.IsUserOnline(memberID) {
+						previews[i].OnlineCount++
+					}
+				}
+			}
+		} else {
+			previews[i].IsOnline = ChatHub.IsUserOnline(previews[i].UserID)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -104,15 +115,23 @@ func MarkAsReadHandler(w http.ResponseWriter, r *http.Request) {
 
 	var data struct {
 		SenderID int `json:"sender_id"`
+		GroupID  int `json:"group_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if err := MarkAsRead(userID, data.SenderID); err != nil {
-		http.Error(w, "Failed to mark messages as read", http.StatusInternalServerError)
-		return
+	if data.GroupID > 0 {
+		if err := UpdateGroupLastSeen(data.GroupID, userID); err != nil {
+			http.Error(w, "Failed to update group last seen", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		if err := MarkAsRead(userID, data.SenderID); err != nil {
+			http.Error(w, "Failed to mark messages as read", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Broadcast read receipt to both sender and recipient (for multi-tab sync)
