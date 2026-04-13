@@ -8,7 +8,8 @@ type Message struct {
 	ID          int       `json:"id"`
 	Type        string    `json:"type"` // "chat" or "status"
 	SenderID    int       `json:"sender_id"`
-	RecipientID int       `json:"recipient_id"`
+	RecipientID int       `json:"recipient_id,omitempty"`
+	GroupID     int       `json:"group_id,omitempty"`
 	Content     string    `json:"content"`
 	SentAt      time.Time `json:"sent_at"`
 	IsRead      bool      `json:"is_read"`
@@ -25,17 +26,20 @@ type UserStatus struct {
 }
 
 type IncomingMessage struct {
-	Type        string `json:"type"` // "chat" or "typing"
-	RecipientID int    `json:"recipient_id"`
+	Type        string `json:"type"` // "chat", "typing", or "group_chat"
+	RecipientID int    `json:"recipient_id,omitempty"`
+	GroupID     int    `json:"group_id,omitempty"`
 	Content     string `json:"content"`
 }
 
 type ConversationPreview struct {
-	UserID      int       `json:"user_id"`
+	UserID      int       `json:"user_id,omitempty"`
+	GroupID     int       `json:"group_id,omitempty"`
 	Username    string    `json:"username"`
 	Avatar      *string   `json:"avatar"`
 	LastMessage string    `json:"last_message"`
 	LastSentAt  time.Time `json:"last_sent_at"`
 	UnreadCount int       `json:"unread_count"`
 	IsOnline    bool      `json:"is_online"`
+	OnlineCount int       `json:"online_count"`
 }
