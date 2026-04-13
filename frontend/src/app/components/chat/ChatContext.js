@@ -8,6 +8,8 @@ const ChatContext = createContext();
 export function ChatProvider({ children }) {
     const pathname = usePathname();
     const [unreadCounts, setUnreadCounts] = useState({});
+    const [activeChatId, setActiveChatId] = useState(null); // 'user_id' or 'group_id' key
+    const activeChatIdRef = useRef(null);
     const [totalUnreadCount, setTotalUnreadCount] = useState(0);
     const [lastNotification, setLastNotification] = useState(null);
     const [socket, setSocket] = useState(null);
@@ -23,7 +25,8 @@ export function ChatProvider({ children }) {
                 const counts = {};
                 data.forEach((conv) => {
                     if (conv.unread_count > 0) {
-                        counts[conv.user_id] = conv.unread_count;
+                        const key = conv.group_id ? `group_${conv.group_id}` : conv.user_id;
+                        counts[key] = conv.unread_count;
                     }
                 });
                 setUnreadCounts(counts);
@@ -33,18 +36,19 @@ export function ChatProvider({ children }) {
         }
     }, []);
 
-    const markAsRead = useCallback(async (senderId) => {
+    const markAsRead = useCallback(async (senderId, groupId = null) => {
         try {
             const res = await fetch("http://localhost:8080/chat/read", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sender_id: senderId }),
+                body: JSON.stringify({ sender_id: senderId, group_id: groupId }),
                 credentials: "include",
             });
             if (res.ok) {
                 setUnreadCounts((prev) => {
                     const newCounts = { ...prev };
-                    delete newCounts[senderId];
+                    const key = groupId ? `group_${groupId}` : senderId;
+                    delete newCounts[key];
                     return newCounts;
                 });
             }
@@ -57,6 +61,10 @@ export function ChatProvider({ children }) {
         const total = Object.values(unreadCounts).reduce((sum, count) => (sum || 0) + (count || 0), 0);
         setTotalUnreadCount(total);
     }, [unreadCounts]);
+
+    useEffect(() => {
+        activeChatIdRef.current = activeChatId;
+    }, [activeChatId]);
 
     useEffect(() => {
         const userId = localStorage.getItem("userId");
@@ -75,10 +83,14 @@ export function ChatProvider({ children }) {
             if (data.type === "chat") {
                 const msg = data;
                 if (msg.recipient_id === currentUserId) {
-                    setUnreadCounts((prev) => {
-                        const newCount = (prev[msg.sender_id] || 0) + 1;
-                        return { ...prev, [msg.sender_id]: newCount };
-                    });
+                    if (String(activeChatIdRef.current) !== String(msg.sender_id)) {
+                        setUnreadCounts((prev) => {
+                            const newCount = (prev[msg.sender_id] || 0) + 1;
+                            return { ...prev, [msg.sender_id]: newCount };
+                        });
+                    } else {
+                        console.log("Suppressed unread for active sender:", msg.sender_id);
+                    }
 
                     if (pathname !== "/chat") {
                         setLastNotification({
@@ -89,7 +101,30 @@ export function ChatProvider({ children }) {
                         });
                     }
                 }
-            } else if (data.type === "read_receipt") {
+            } else if (data.type === "group_chat") {
+                const msg = data;
+                if (msg.sender_id !== currentUserId) {
+                    const groupKey = `group_${msg.group_id}`;
+                    if (String(activeChatIdRef.current) !== String(groupKey)) {
+                        setUnreadCounts((prev) => {
+                            const newCount = (prev[groupKey] || 0) + 1;
+                            return { ...prev, [groupKey]: newCount };
+                        });
+                    } else {
+                        console.log("Suppressed unread for active group:", groupKey);
+                    }
+
+                    if (pathname !== "/chat") {
+                        setLastNotification({
+                            group_id: msg.group_id,
+                            sender_name: msg.sender?.username || "Someone",
+                            content: `[Group] ${msg.content}`,
+                            sent_at: msg.sent_at,
+                        });
+                    }
+                }
+            }
+            else if (data.type === "read_receipt") {
                 const { sender_id, recipient_id } = data;
                 // If I am the one who read the messages (all my tabs should sync)
                 if (recipient_id === currentUserId) {
@@ -123,6 +158,7 @@ export function ChatProvider({ children }) {
                 lastNotification,
                 setLastNotification,
                 markAsRead,
+                setActiveChatId,
                 socket,
             }}
         >
