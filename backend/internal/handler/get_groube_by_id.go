@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"social-network-backend/internal/chat"
 	key "social-network-backend/internal/repository"
 	"strconv"
 )
@@ -25,7 +26,7 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
         SELECT 
             g.id, g.title, g.description, g.creator_id,
             u.username, u.first_name, u.last_name,
-            g.privacy,
+            g.privacy, g.avatar,
             COALESCE((SELECT status FROM group_members gm2 WHERE gm2.group_id = g.id AND gm2.user_id = ?), 'not_member') as member_status,
             EXISTS (
                 SELECT 1 FROM group_members gm 
@@ -42,6 +43,8 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 		Description  string `json:"description"`
 		CreatorID    int    `json:"creator_id"`
 		Privacy      string `json:"privacy"`
+		Avatar       string `json:"avatar"`
+		OnlineCount  int    `json:"online_count"`
 		MemberStatus string `json:"member_status"`
 		Admin        struct {
 			Username  string `json:"username"`
@@ -53,7 +56,7 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 
 	err = row.Scan(&group.ID, &group.Title, &group.Description, &group.CreatorID,
 		&group.Admin.Username, &group.Admin.FirstName, &group.Admin.LastName,
-		&group.Privacy, &group.MemberStatus, &group.IsMember)
+		&group.Privacy, &group.Avatar, &group.MemberStatus, &group.IsMember)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -84,6 +87,10 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 			"last_name":  lastName,
 			"status":     status,
 		})
+		// Calculate online count
+		if chat.ChatHub != nil && chat.ChatHub.IsUserOnline(id) {
+			group.OnlineCount++
+		}
 	}
 
 	posts := []map[string]any{}
