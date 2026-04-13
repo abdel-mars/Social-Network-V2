@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	key "social-network-backend/internal/repository"
+	"social-network-backend/internal/sse"
 	"strconv"
 	"time"
 )
@@ -73,6 +74,11 @@ func Create_Post_In_Groupe(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("The Id of the last insert is", ID)
 	post, _ := GetAd_post(int(ID))
 	// <<===>> //
+	// Broadcast new post notification to all group members via SSE
+	sse.BroadcastToGroup(groupID, map[string]interface{}{
+		"type": "new_group_post",
+		"data": post,
+	})
 
 	fmt.Printf("The post at group it's set %v", post)
 	w.Header().Set("Content-Type", "application/json")
