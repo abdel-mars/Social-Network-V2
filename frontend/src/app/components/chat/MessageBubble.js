@@ -50,6 +50,9 @@ export default function MessageBubble({ message }) {
 
       <div className={style.messageContent}>
         <div className={style.bubble}>
+          {!isSelf && message.group_id && (
+            <span className={style.senderName}>{message.sender?.username}</span>
+          )}
           <p>{renderContent(message.content)}</p>
         </div>
         <span className={style.msgTime}>

@@ -186,25 +186,28 @@
   cursor: pointer;
 }
 
-.inviteFriendsBtn {
+.inviteFriendsBtn,
+.chatBtn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 15px;
-  background: var(--accent-bg);
-  color: var(--accent);
-  border: 1px solid var(--accent-light);
+  padding: 8px 16px;
   border-radius: var(--radius-pill);
-  font-weight: 700;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
   font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   transition: all var(--transition);
+  text-decoration: none;
 }
 
-.inviteFriendsBtn:hover {
-  background: var(--accent);
-  color: #fff;
+.inviteFriendsBtn:hover,
+.chatBtn:hover {
+  background: var(--surface-3);
   border-color: var(--accent);
+  color: var(--accent);
 }
 
 .leaveBtn,
@@ -418,21 +421,26 @@
   .pageContent {
     grid-template-columns: 1fr;
   }
+
   .groupHeader {
     flex-direction: column;
     align-items: stretch;
   }
+
   .groupActions {
     width: 100%;
     margin-left: 0;
     justify-content: flex-start;
   }
+
   .sideCol {
     position: static;
   }
+
   .confirmActions {
     flex-direction: column-reverse;
   }
+
   .confirmSecondary,
   .confirmPrimary {
     width: 100%;
