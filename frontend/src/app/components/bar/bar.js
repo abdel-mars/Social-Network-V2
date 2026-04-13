@@ -47,6 +47,18 @@ export function Renderbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, [notifOpen]);
 
+  // Handle logout sync across tabs
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      // If userId is cleared in another tab, redirect here too
+      if (e.key === "userId" && !e.newValue) {
+        router.push("/");
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [router]);
+
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:8080/logout", {
