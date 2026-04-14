@@ -222,7 +222,6 @@
 
 .leaveBtn:hover,
 .deleteBtn:hover {
-  transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
@@ -331,7 +330,6 @@
 
 .confirmSecondary:hover,
 .confirmPrimary:hover {
-  transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 

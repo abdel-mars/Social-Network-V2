@@ -134,7 +134,6 @@
   background: var(--accent-bg);
   color: var(--accent);
   border-color: var(--accent-light);
-  transform: translateY(-1px);
 }
 .activeGoing {
   background: var(--success);
@@ -255,7 +254,6 @@
 }
 .submitBtn:hover {
   background: var(--accent-dark);
-  transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(91,124,246,0.3);
 }
 .dateRow {

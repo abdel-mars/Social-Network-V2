@@ -58,7 +58,6 @@
 
 .followBackBtn:hover:not(:disabled) {
   background-color: #a656ff;
-  transform: translateY(-1px);
 }
 
 .followBackBtn:disabled {

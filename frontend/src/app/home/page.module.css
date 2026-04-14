@@ -78,7 +78,6 @@
 
 .promptBtn:hover {
   background: var(--accent-dark);
-  transform: translateY(-1px);
 }
 
 /* Quick actions */

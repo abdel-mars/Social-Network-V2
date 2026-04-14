@@ -60,7 +60,6 @@
 
 .activeConv .convAvatar {
   border: 2px solid var(--accent);
-  transform: scale(1.05);
 }
 
 .avatarWrapper {
@@ -407,7 +406,6 @@
 
 .sendBtn:hover:not(:disabled) {
   background: var(--accent-dark);
-  transform: scale(1.05);
 }
 
 .sendBtn:disabled {
@@ -467,15 +465,8 @@
 }
 
 @keyframes pickerAppear {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Mobile responsive */
@@ -521,30 +512,13 @@
 }
 
 @keyframes typingAnimation {
-
-  0%,
-  60%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.6;
-  }
-
-  30% {
-    transform: translateY(-4px);
-    opacity: 1;
-  }
+  0%, 60%, 100% { opacity: 0.4; }
+  30% { opacity: 1; }
 }
 
 @keyframes typingFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .typingText {
@@ -576,14 +550,12 @@
   bottom: 24px;
   right: 24px;
   z-index: 9999;
-  transform: translateY(100px);
   opacity: 0;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.3s ease;
   pointer-events: none;
 }
 
 .popupVisible {
-  transform: translateY(0);
   opacity: 1;
   pointer-events: all;
 }

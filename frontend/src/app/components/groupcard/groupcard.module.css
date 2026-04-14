@@ -15,7 +15,6 @@
 }
 
 .clickable:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   border-color: var(--accent-light);
 }
@@ -101,7 +100,6 @@
 
 .joinBtn:hover:not(:disabled) {
   background: var(--accent-dark);
-  transform: translateY(-1px);
 }
 
 .joinBtn.joined {

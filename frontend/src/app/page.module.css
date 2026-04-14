@@ -42,8 +42,8 @@
 }
 
 @keyframes floatIn {
-  from { opacity: 0; transform: translateY(24px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* Logo */
@@ -152,7 +152,6 @@
 
 .submitBtn:hover:not(:disabled) {
   background: var(--accent-dark, #3a5ce5);
-  transform: translateY(-1px);
   box-shadow: 0 6px 24px rgba(91,124,246,0.4);
 }
 

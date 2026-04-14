@@ -52,6 +52,7 @@ func Mux() *http.ServeMux {
 	social.HandleFunc("/users-sug", midle.AuthMiddleware(handler.Getusers))
 	social.HandleFunc("/toggle-follow", midle.AuthMiddleware(handler.Setfollowers))
 	social.HandleFunc("/update-privacy", midle.AuthMiddleware(handler.UpdatePrivacy))
+	social.HandleFunc("/profile/update", midle.AuthMiddleware(handler.UpdateProfile))
 	//
 	social.HandleFunc("/GetCUser/", midle.AuthMiddleware(handler.PostsUserProfile))
 	social.HandleFunc("/Friends", midle.AuthMiddleware(handler.GetFriendlist))
