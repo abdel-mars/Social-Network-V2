@@ -21,7 +21,6 @@
 .followBtn:hover:not(:disabled) {
   background: var(--accent-dark);
   border-color: var(--accent-dark);
-  transform: translateY(-1px);
 }
 
 .followBtn.pending {

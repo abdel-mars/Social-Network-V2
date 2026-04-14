@@ -162,3 +162,34 @@ func MarkNotificationsRead(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Notifications marked as read"})
 }
+
+func ClearNotifications(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, ok := r.Context().Value(namix.UserIDKey).(int)
+	if !ok {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Update all unread or pending interactive notifications that haven't been responded to
+	query := `
+		UPDATE notifications
+		SET state = 'read'
+		WHERE user_id = ? AND state != 'read'
+	`
+
+	if _, err := namix.DB.Exec(query, userID); err != nil {
+		http.Error(w, "Failed to clear notifications", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "All notifications cleared"})
+}
+
+

@@ -122,7 +122,7 @@ export default function Home() {
               </div>
             ) : (
               posts.map((post) => (
-                <RenderPosts key={post.id} post={post} setPosts={setPosts} />
+                <RenderPosts key={post.group_id ? `group_${post.id}` : `post_${post.id}`} post={post} setPosts={setPosts} />
               ))
             )}
           </section>

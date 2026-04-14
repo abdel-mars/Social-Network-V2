@@ -62,13 +62,30 @@ export function ChatProvider({ children }) {
         setTotalUnreadCount(total);
     }, [unreadCounts]);
 
+    const [userId, setUserId] = useState(null);
+
+    // Poll for userId changes (e.g. login/logout)
+    useEffect(() => {
+        const checkUser = () => {
+            const currentId = localStorage.getItem("userId");
+            if (currentId !== userId) {
+                setUserId(currentId);
+            }
+        };
+        checkUser();
+        const interval = setInterval(checkUser, 2000);
+        return () => clearInterval(interval);
+    }, [userId]);
+
     useEffect(() => {
         activeChatIdRef.current = activeChatId;
     }, [activeChatId]);
 
     useEffect(() => {
-        const userId = localStorage.getItem("userId");
-        if (!userId) return;
+        if (!userId) {
+            setSocket(null);
+            return;
+        }
 
         let isDestroyed = false;
         fetchUnreadCounts();
@@ -77,6 +94,7 @@ export function ChatProvider({ children }) {
         setSocket(ws);
 
         ws.onopen = () => {
+            console.log("[Chat] WebSocket connected");
             if (isDestroyed) {
                 ws.close();
             }
@@ -84,88 +102,97 @@ export function ChatProvider({ children }) {
 
         const handleMessage = (event) => {
             if (isDestroyed) return;
-            const data = JSON.parse(event.data);
-            const currentUserId = parseInt(localStorage.getItem("userId"));
+            try {
+                const data = JSON.parse(event.data);
+                const currentUserId = parseInt(localStorage.getItem("userId"));
 
-            if (data.type === "chat") {
-                const msg = data;
-                if (msg.recipient_id === currentUserId) {
-                    if (String(activeChatIdRef.current) !== String(msg.sender_id)) {
+                if (data.type === "chat") {
+                    const msg = data;
+                    if (msg.recipient_id === currentUserId) {
+                        if (String(activeChatIdRef.current) !== String(msg.sender_id)) {
+                            setUnreadCounts((prev) => {
+                                const newCount = (prev[msg.sender_id] || 0) + 1;
+                                return { ...prev, [msg.sender_id]: newCount };
+                            });
+
+                            if (pathname !== "/chat") {
+                                setLastNotification({
+                                    sender_id: msg.sender_id,
+                                    sender_name: msg.sender?.username || "Someone",
+                                    content: msg.content,
+                                    sent_at: msg.sent_at,
+                                });
+                            }
+                        } else {
+                            console.log("Suppressed unread for active sender:", msg.sender_id);
+                        }
+                    }
+                } else if (data.type === "group_chat") {
+                    const msg = data;
+                    if (msg.sender_id !== currentUserId) {
+                        const groupKey = `group_${msg.group_id}`;
+                        if (String(activeChatIdRef.current) !== String(groupKey)) {
+                            setUnreadCounts((prev) => {
+                                const newCount = (prev[groupKey] || 0) + 1;
+                                return { ...prev, [groupKey]: newCount };
+                            });
+                        } else {
+                            console.log("Suppressed unread for active group:", groupKey);
+                        }
+
+                        if (pathname !== "/chat") {
+                            setLastNotification({
+                                group_id: msg.group_id,
+                                sender_name: msg.sender?.username || "Someone",
+                                content: `[Group] ${msg.content}`,
+                                sent_at: msg.sent_at,
+                            });
+                        }
+                    }
+                } else if (data.type === "read_receipt") {
+                    const { sender_id, recipient_id } = data;
+                    if (recipient_id === currentUserId) {
                         setUnreadCounts((prev) => {
-                            const newCount = (prev[msg.sender_id] || 0) + 1;
-                            return { ...prev, [msg.sender_id]: newCount };
-                        });
-                    } else {
-                        console.log("Suppressed unread for active sender:", msg.sender_id);
-                    }
-
-                    if (pathname !== "/chat") {
-                        setLastNotification({
-                            sender_id: msg.sender_id,
-                            sender_name: msg.sender?.username || "Someone",
-                            content: msg.content,
-                            sent_at: msg.sent_at,
+                            const newCounts = { ...prev };
+                            delete newCounts[sender_id];
+                            return newCounts;
                         });
                     }
                 }
-            } else if (data.type === "group_chat") {
-                const msg = data;
-                if (msg.sender_id !== currentUserId) {
-                    const groupKey = `group_${msg.group_id}`;
-                    if (String(activeChatIdRef.current) !== String(groupKey)) {
-                        setUnreadCounts((prev) => {
-                            const newCount = (prev[groupKey] || 0) + 1;
-                            return { ...prev, [groupKey]: newCount };
-                        });
-                    } else {
-                        console.log("Suppressed unread for active group:", groupKey);
-                    }
-
-                    if (pathname !== "/chat") {
-                        setLastNotification({
-                            group_id: msg.group_id,
-                            sender_name: msg.sender?.username || "Someone",
-                            content: `[Group] ${msg.content}`,
-                            sent_at: msg.sent_at,
-                        });
-                    }
-                }
-            }
-            else if (data.type === "read_receipt") {
-                const { sender_id, recipient_id } = data;
-                // If I am the one who read the messages (all my tabs should sync)
-                if (recipient_id === currentUserId) {
-                    setUnreadCounts((prev) => {
-                        const newCounts = { ...prev };
-                        delete newCounts[sender_id];
-                        return newCounts;
-                    });
-                }
+            } catch (err) {
+                console.error("[Chat] Failed to parse message:", err);
             }
         };
 
-        // Use addEventListener for message to keep it consistent with previous code
         ws.addEventListener("message", handleMessage);
 
         const handleUnload = () => {
             isDestroyed = true;
-            ws.close();
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
         };
         window.addEventListener("beforeunload", handleUnload);
+
+        ws.onclose = (event) => {
+            if (event.wasClean) {
+                console.log(`[Chat] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+            } else {
+                console.log("[Chat] Connection died");
+            }
+        };
 
         return () => {
             isDestroyed = true;
             window.removeEventListener("beforeunload", handleUnload);
             ws.removeEventListener("message", handleMessage);
 
-            // Only close if it's already open. 
-            // If it's CONNECTING, the onopen handler will close it once it establishes.
             if (ws.readyState === WebSocket.OPEN) {
                 ws.close();
             }
             setSocket(null);
         };
-    }, [fetchUnreadCounts, pathname]);
+    }, [fetchUnreadCounts, userId]);
 
     return (
         <ChatContext.Provider

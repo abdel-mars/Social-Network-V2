@@ -7,6 +7,8 @@ import { Renderbar } from "../components/bar/bar";
 import styles from "./page.module.css";
 import { useSearchParams } from "next/navigation";
 
+import { ProfileEditModal } from "../components/profile/ProfileEditModal";
+
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
   const [isPrivate, setIsPrivate] = useState(0);
@@ -19,11 +21,12 @@ export default function ProfilePage() {
   const [loggedInUserId, setloggedInUserId] = useState(null);
   const [isPending, setIsPending] = useState(false);
   const [Pend, setPad] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
 
   useEffect(() => {
     let id = localStorage.getItem("userId");
     setloggedInUserId(id);
-  });
+  }, []);
 
   const isOwnProfile = loggedInUserId === userId;
   const canSeePosts = isOwnProfile || Myfriend || (user && user.is_private === 0);
@@ -64,19 +67,17 @@ export default function ProfilePage() {
     fetchPosts();
   }, [userId, user?.is_private, Myfriend]);
 
-  const updatePrivacy = async (e) => {
-    const newValue = parseInt(e.target.value);
-    setIsPrivate(newValue);
-    try {
-      await fetch("http://localhost:8080/update-privacy", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_private: newValue }),
-      });
-    } catch (err) {
-      console.error(err);
-    }
+  const handleUpdateUser = (updatedData) => {
+    setUser((prev) => ({
+      ...prev,
+      first_name: updatedData.first_name,
+      last_name: updatedData.last_name,
+      nickname: updatedData.nickname,
+      about: updatedData.about,
+      is_private: updatedData.is_private ? 1 : 0,
+      avatar: updatedData.avatar,
+    }));
+    setIsPrivate(updatedData.is_private ? 1 : 0);
   };
 
   const handleFollowToggle = async () => {
@@ -118,12 +119,9 @@ export default function ProfilePage() {
         <div className={styles.profileCard}>
           {/* Cover */}
           <div className={styles.cover}>
-            {/* The cover now relies entirely on the pure CSS smooth gradient from styles.cover */}
           </div>
 
-          {/* Profile body */}
           <div className={styles.profileBody}>
-            {/* Avatar */}
             <div className={styles.avatarWrapper}>
               <img
                 src={user.avatar ? `http://localhost:8080/${user.avatar}` : "/default-avatar.png"}
@@ -134,7 +132,7 @@ export default function ProfilePage() {
 
             <div className={styles.profileInfo}>
               <div className={styles.nameRow}>
-                <div>
+                <div className={styles.nameInfo}>
                   <h1 className={styles.fullName}>
                     {user.first_name} {user.last_name}
                     {user.nickname && <span className={styles.nickname}> ({user.nickname})</span>}
@@ -144,18 +142,12 @@ export default function ProfilePage() {
 
                 <div className={styles.profileActions}>
                   {isOwnProfile ? (
-                    <div className={styles.privacySelect}>
-                      {isPrivate === 0 ? <Globe size={14} /> : <Lock size={14} />}
-                      <select
-                        value={isPrivate}
-                        onChange={updatePrivacy}
-                        className={styles.select}
-                        id="privacy-select"
-                      >
-                        <option value={0}>Public</option>
-                        <option value={1}>Private</option>
-                      </select>
-                    </div>
+                    <button 
+                      className={styles.editBtn} 
+                      onClick={() => setEditModalOpen(true)}
+                    >
+                      Edit Profile
+                    </button>
                   ) : (
                     <button
                       id="follow-toggle-btn"
@@ -214,7 +206,7 @@ export default function ProfilePage() {
           {posts && posts.length > 0 ? (
             <div className={styles.postsFeed}>
               {posts.map((post) => (
-                <RenderPosts key={post.id} post={post} setPosts={setPosts} />
+                <RenderPosts key={post.group_id ? `group_${post.id}` : `post_${post.id}`} post={post} setPosts={setPosts} />
               ))}
             </div>
           ) : (
@@ -226,6 +218,14 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {isEditModalOpen && (
+        <ProfileEditModal
+          user={user}
+          onClose={() => setEditModalOpen(false)}
+          onUpdate={handleUpdateUser}
+        />
+      )}
     </div>
   );
 }

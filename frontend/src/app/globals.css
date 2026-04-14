@@ -97,7 +97,7 @@ html {
 }
 
 body {
-  font-family: 'Nunito', sans-serif;
+  font-family: var(--font-nunito), 'Nunito', sans-serif;
   font-weight: 400;
   background-color: var(--bg);
   color: var(--text-primary);
@@ -110,8 +110,14 @@ a {
   text-decoration: none;
 }
 
+button, input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  line-height: inherit;
+}
+
 button {
-  font-family: 'Nunito', sans-serif;
   cursor: pointer;
   border: none;
   background: none;
@@ -188,7 +194,6 @@ input:-webkit-autofill:focus {
 }
 .wiiu-btn-primary:hover {
   background: var(--accent-dark);
-  transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(91,124,246,0.3);
 }
 

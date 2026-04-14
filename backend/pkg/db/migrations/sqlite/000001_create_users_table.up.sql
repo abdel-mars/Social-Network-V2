@@ -1,5 +1,3 @@
---<-> Here There Is A Table Of <|-|>--->
--- User Table
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
@@ -16,7 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- This The sessions table 
 CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -26,25 +23,13 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- her is the table of post ! 
-CREATE TABLE IF NOT EXISTS posts (
+CREATE TABLE IF NOT EXISTS followers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    title  TEXT NOT NULL,
-    content TEXT NOT NULL,
-    image_path TEXT,
+    follower_id INTEGER NOT NULL,
+    followed_id INTEGER NOT NULL,
+    status TEXT CHECK(status IN ('pending', 'accepted')) DEFAULT 'pending',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- Her Is The Comment Who I Will Store In "<->" By There Post_id !!
-CREATE TABLE IF NOT EXISTS comments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    post_id INTEGER NOT NULL,
-    content TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES posts(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    UNIQUE(follower_id, followed_id),
+    FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (followed_id) REFERENCES users(id) ON DELETE CASCADE
 );

@@ -53,11 +53,13 @@ func Mux() *http.ServeMux {
 	social.HandleFunc("/users-sug", midle.AuthMiddleware(handler.Getusers))
 	social.HandleFunc("/toggle-follow", midle.AuthMiddleware(handler.Setfollowers))
 	social.HandleFunc("/update-privacy", midle.AuthMiddleware(handler.UpdatePrivacy))
+	social.HandleFunc("/profile/update", midle.AuthMiddleware(handler.UpdateProfile))
 	//
 	social.HandleFunc("/GetCUser/", midle.AuthMiddleware(handler.PostsUserProfile))
 	social.HandleFunc("/Friends", midle.AuthMiddleware(handler.GetFriendlist))
 	social.HandleFunc("/notifications", midle.AuthMiddleware(handler.Notification))
 	social.HandleFunc("/notifications/read", midle.AuthMiddleware(handler.MarkNotificationsRead))
+	social.HandleFunc("/notifications/clear", midle.AuthMiddleware(handler.ClearNotifications))
 	social.HandleFunc("/request_follow", midle.AuthMiddleware(handler.Accept_or_reject))
 	social.HandleFunc("/Create_Group", midle.AuthMiddleware(handler.Create_Group))
 	social.HandleFunc("/Get_Groups", midle.AuthMiddleware(handler.Get_Groups))
@@ -71,6 +73,8 @@ func Mux() *http.ServeMux {
 	social.HandleFunc("/Creat_Post_Groupe", midle.AuthMiddleware(handler.Create_Post_In_Groupe))
 	social.HandleFunc("/group-post/update", midle.AuthMiddleware(handler.Update_Group_Post))
 	social.HandleFunc("/group-post/delete", midle.AuthMiddleware(handler.Delete_Group_Post))
+	social.HandleFunc("/group-event/create", midle.AuthMiddleware(handler.Create_Group_Event))
+	social.HandleFunc("/group-event/respond", midle.AuthMiddleware(handler.Respond_Group_Event))
 	// <<---->>..
 	return social
 }
