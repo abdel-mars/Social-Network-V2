@@ -12,7 +12,20 @@ export function Renderformpost({
   onClose,
   imageFile,
   setImageFile,
+  privacy,
+  setPrivacy,
+  viewerIds,
+  setViewerIds,
+  followers,
 }) {
+  const toggleViewer = (id) => {
+    if (viewerIds.includes(id)) {
+      setViewerIds(viewerIds.filter((vId) => vId !== id));
+    } else {
+      setViewerIds([...viewerIds, id]);
+    }
+  };
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -43,6 +56,44 @@ export function Renderformpost({
             className={styles.textarea}
             required
           />
+
+          {privacy !== undefined && (
+            <select
+              value={privacy}
+              onChange={(e) => setPrivacy(e.target.value)}
+              className={styles.input}
+              style={{ padding: "8px", marginTop: "10px", appearance: "auto" }}
+            >
+              <option value="public">🌍 Public (Everyone)</option>
+              <option value="almost_private">👥 Almost Private (Followers Only)</option>
+              <option value="private">🔒 Private (Specific Followers)</option>
+            </select>
+          )}
+
+          {privacy === "private" && followers && followers.length > 0 && (
+            <div className={styles.followersSelection}>
+              <p style={{ fontSize: "14px", fontWeight: "bold", margin: "10px 0 5px 0" }}>
+                Select who can see this:
+              </p>
+              <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid var(--border)", borderRadius: "8px", padding: "10px" }}>
+                {followers.map(f => (
+                  <label key={f.id} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", cursor: "pointer" }}>
+                    <input 
+                      type="checkbox" 
+                      checked={viewerIds.includes(f.id)}
+                      onChange={() => toggleViewer(f.id)}
+                    />
+                    {f.full_name || f.username}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+          {privacy === "private" && followers && followers.length === 0 && (
+            <div className={styles.emptyFollowers}>
+              You don't have any followers to select yet.
+            </div>
+          )}
 
           {/* Image upload */}
           <label className={styles.imageLabel} htmlFor="post-image-input">

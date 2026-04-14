@@ -6,23 +6,33 @@ import (
 	"fmt"
 )
 
-func AddNewPost(userId int, titel string, content string, image string) (int, error) {
-	res, err := repo.DB.Exec(repo.INSERT_NEW_POST, userId, titel, content, image)
+func AddNewPost(userId int, titel string, content string, image string, privacy string, viewers []int) (int, error) {
+	res, err := repo.DB.Exec(repo.INSERT_NEW_POST, userId, titel, content, image, privacy)
 	if err != nil {
-        return -1, err  // <<===>> 
+        return -1, err
     }
     id, err := res.LastInsertId()
     if err != nil {
         fmt.Println("Warning: could not get LastInsertId:", err)
-        return 0, nil // still success
+        return 0, nil
     }
+
+	if privacy == "private" && len(viewers) > 0 {
+		for _, viewerID := range viewers {
+			_, err = repo.DB.Exec("INSERT INTO post_viewers (post_id, user_id) VALUES (?, ?)", id, viewerID)
+			if err != nil {
+				fmt.Println("Warning: failed to add viewer:", err)
+			}
+		}
+	}
+
     return int(id), nil
 }
 
 func GetAddedPost(id int) (*repo.Posts, error) {
     query := `
         SELECT p.id, p.user_id, u.username, u.first_name || ' ' || u.last_name AS full_name,
-               p.title, p.content, image_path, p.created_at, p.updated_at
+               p.title, p.content, p.privacy, image_path, p.created_at, p.updated_at
         FROM posts p
         JOIN users u ON p.user_id = u.id
         WHERE p.id = ?
@@ -31,7 +41,7 @@ func GetAddedPost(id int) (*repo.Posts, error) {
 
     var post repo.Posts
     err := row.Scan(&post.ID, &post.UserID, &post.UserName, &post.FullName,
-                    &post.Title, &post.Content, &post.ImagePath, &post.CreatedAt, &post.UpdatedAt)
+                    &post.Title, &post.Content, &post.Privacy, &post.ImagePath, &post.CreatedAt, &post.UpdatedAt)
     if err != nil {
         return nil, err
     }

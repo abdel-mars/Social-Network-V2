@@ -110,6 +110,7 @@ type Posts struct {
 	Avatar        *string `json:"avatar,omitempty"`
 	Title         string  `json:"title"`
 	Content       string  `json:"content"`
+	Privacy       string  `json:"privacy"`
 	ImagePath     *string `json:"image_path"`
 	CreatedAt     string  `json:"created_at"`
 	UpdatedAt     string  `json:"updated_at"`

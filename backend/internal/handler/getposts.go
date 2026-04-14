@@ -50,6 +50,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
                 u.avatar,
                 p.title,
                 p.content,
+                p.privacy,
                 p.image_path,
                 p.created_at,
                 p.updated_at,
@@ -60,6 +61,10 @@ func getAllPosts(userID int) ([]get.Posts, error) {
                 NULL AS group_title
             FROM posts p
             JOIN users u ON p.user_id = u.id
+            WHERE p.privacy = 'public'
+               OR p.user_id = ?
+               OR (p.privacy = 'almost_private' AND EXISTS (SELECT 1 FROM followers f WHERE f.followed_id = p.user_id AND f.follower_id = ? AND f.status = 'accepted'))
+               OR (p.privacy = 'private' AND EXISTS (SELECT 1 FROM post_viewers pv WHERE pv.post_id = p.id AND pv.user_id = ?))
 
             UNION ALL
 
@@ -71,6 +76,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
                 u.avatar,
                 gp.title,
                 gp.content,
+                'group' AS privacy,
                 gp.image AS image_path,
                 gp.created_at,
                 gp.created_at AS updated_at,
@@ -87,7 +93,15 @@ func getAllPosts(userID int) ([]get.Posts, error) {
         ) combined_posts
         ORDER BY created_at DESC
     `
-    rows, err := get.DB.Query(query, userID, userID, userID)
+    // query params:
+    // 1: userID (for user_reaction)
+    // 2: userID (for p.user_id = ?)
+    // 3: userID (for f.follower_id = ?)
+    // 4: userID (for pv.user_id = ?)
+    // 5: userID (for group user_reaction)
+    // 6: userID (for gm.user_id = ?)
+
+    rows, err := get.DB.Query(query, userID, userID, userID, userID, userID, userID)
     if err != nil {
         return nil, err
     }
@@ -101,7 +115,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
 
         if err := rows.Scan(
             &p.ID, &p.UserID, &p.UserName, &p.FullName, &p.Avatar,
-            &p.Title, &p.Content, &p.ImagePath, &p.CreatedAt, &p.UpdatedAt,
+            &p.Title, &p.Content, &p.Privacy, &p.ImagePath, &p.CreatedAt, &p.UpdatedAt,
             &p.LikesCount, &p.DislikesCount, &userReaction, &groupID, &groupTitle,
         ); err != nil {
             return nil, err

@@ -56,7 +56,19 @@ export function RenderPosts({ post, setPosts }) {
           />
         <div className={styles.authorInfo}>
           <span className={styles.authorName}>{post.full_name || post.user_name}</span>
-          <span className={styles.postTime}>{timeAgo(post.created_at)}</span>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span className={styles.postTime}>{timeAgo(post.created_at)}</span>
+            {post.privacy === "private" && (
+              <span title="Private (Specific followers only)" style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
+                🔒 Private
+              </span>
+            )}
+            {post.privacy === "almost_private" && (
+              <span title="Almost Private (Followers only)" style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
+                👥 Followers
+              </span>
+            )}
+          </div>
         </div>
         </div>
 

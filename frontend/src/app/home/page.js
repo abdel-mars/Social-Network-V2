@@ -17,6 +17,9 @@ export default function Home() {
   const [newContent, setNewContent] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageFile, setImageFile] = useState(null);
+  const [privacy, setPrivacy] = useState("public");
+  const [viewerIds, setViewerIds] = useState([]);
+  const [followers, setFollowers] = useState([]);
   const [toast, setToast] = useState(null);
 
   const searchParams = useSearchParams();
@@ -43,7 +46,21 @@ export default function Home() {
         console.error("Failed to fetch posts:", err);
       }
     }
+    async function fetchFollowers() {
+      try {
+        const res = await fetch("http://localhost:8080/my-followers", {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setFollowers(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch followers:", err);
+      }
+    }
     fetchPosts();
+    fetchFollowers();
   }, []);
 
   const handleCreatePost = async (e) => {
@@ -53,6 +70,10 @@ export default function Home() {
     const formData = new FormData();
     formData.append("title", newTitle);
     formData.append("content", newContent);
+    formData.append("privacy", privacy);
+    if (privacy === "private") {
+      formData.append("viewer_ids", JSON.stringify(viewerIds));
+    }
     if (imageFile) formData.append("image", imageFile);
 
     try {
@@ -72,6 +93,8 @@ export default function Home() {
       setNewTitle("");
       setNewContent("");
       setImageFile(null);
+      setPrivacy("public");
+      setViewerIds([]);
       setIsModalOpen(false);
     } catch (err) {
       console.error("Failed to create post:", err);
@@ -148,6 +171,11 @@ export default function Home() {
           onClose={() => setIsModalOpen(false)}
           imageFile={imageFile}
           setImageFile={setImageFile}
+          privacy={privacy}
+          setPrivacy={setPrivacy}
+          viewerIds={viewerIds}
+          setViewerIds={setViewerIds}
+          followers={followers}
         />
       )}
     </div>
