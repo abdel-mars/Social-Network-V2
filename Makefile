@@ -40,6 +40,10 @@ frontend-run:
 	if [ ! -d node_modules/emoji-picker-react ]; then \
 		echo "emoji-picker-react not found — installing"; \
 		npm install emoji-picker-react --no-audit --no-fund; \
+	fi && \
+	if [ ! -d node_modules/date-fns ]; then \
+		echo "date-fns not found — installing"; \
+		npm install date-fns --no-audit --no-fund; \
 	fi && npm run dev
 
 dev: backend-init-db

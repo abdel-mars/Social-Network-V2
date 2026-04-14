@@ -6,11 +6,13 @@ import { Renderbar } from "../../components/bar/bar";
 import { Renderformpost } from "../../components/createpost/Createpost";
 import { RenderPosts } from "../../components/posts/post";
 import GroupCard from "../../components/groupcard/groupcard";
-import { PenSquare, Users, UserPlus, LogOut, Trash2, TriangleAlert, X } from "lucide-react";
+import { PenSquare, Users, UserPlus, LogOut, Trash2, TriangleAlert, X, Calendar } from "lucide-react";
 import styles from "./groupdetail.module.css";
 import InviteFriendsModal from "../../components/inviteFriends/inviteFriends";
 import Toast from "../../components/ui/Toast";
 import { useNotifications } from "../../components/notifications/NotificationsContext";
+import { EventsFeed } from "../../components/events/EventsFeed";
+import { CreateEventModal } from "../../components/events/CreateEventModal";
 // use global styles where handy if needed, but groupdetail.module.css is primary
 
 export default function GroupDetailsPage() {
@@ -25,6 +27,8 @@ export default function GroupDetailsPage() {
   const [newContent, setNewContent] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [posts, setPosts] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [IsMember, setIsMember] = useState(false);
   const [inviteState, setInviteState] = useState(null);
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -53,6 +57,7 @@ export default function GroupDetailsPage() {
       const data = await res.json();
       setIsMember(data.group.is_member);
       setPosts(data.posts || []);
+      setEvents(data.events || []);
       setInviteState(data.group.member_status);
       setGroup(data);
       setGroupe_id(data.group);
@@ -134,6 +139,29 @@ export default function GroupDetailsPage() {
     } catch (err) {
       console.error(err);
       setToast({ message: "Failed to create the group post.", type: "error" });
+    }
+  };
+
+  const handleCreateEvent = async (eventData) => {
+    try {
+      const res = await fetch("http://localhost:8080/group-event/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          group_id: Number(id),
+          title: eventData.title,
+          description: eventData.description,
+          event_date: eventData.eventDate + ":00Z",
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create event");
+      await fetchGroup();
+      setIsEventModalOpen(false);
+      setToast({ message: "Event created successfully.", type: "success" });
+    } catch (err) {
+      console.error(err);
+      setToast({ message: "Failed to create event.", type: "error" });
     }
   };
 
@@ -297,14 +325,25 @@ export default function GroupDetailsPage() {
             </>
           ) : (
             <>
-              {/* Create Post Prompt */}
-              <div className={styles.createPrompt} onClick={() => setIsModalOpen(true)}>
-                <div className={styles.promptText}>Got something to share with the group?</div>
-                <button className={styles.promptBtn}>
-                  <PenSquare size={15} />
-                  Post
-                </button>
+              {/* Actions row */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }} className={styles.createPrompt} onClick={() => setIsModalOpen(true)}>
+                  <div className={styles.promptText}>Got something to share?</div>
+                  <button className={styles.promptBtn}>
+                    <PenSquare size={15} />
+                    Post
+                  </button>
+                </div>
+                <div style={{ flex: 1 }} className={styles.createPrompt} onClick={() => setIsEventModalOpen(true)}>
+                  <div className={styles.promptText}>Hosting an event?</div>
+                  <button className={styles.promptBtn}>
+                    <Calendar size={15} />
+                    Event
+                  </button>
+                </div>
               </div>
+
+              <EventsFeed events={events} setEvents={setEvents} />
 
               {/* Posts list */}
               <div className={styles.postsFeed}>
@@ -356,6 +395,12 @@ export default function GroupDetailsPage() {
           setImageFile={setImageFile}
         />
       )}
+
+      <CreateEventModal
+        isOpen={isEventModalOpen}
+        onClose={() => setIsEventModalOpen(false)}
+        onCreate={handleCreateEvent}
+      />
 
       {isInviteModalOpen && (
         <InviteFriendsModal

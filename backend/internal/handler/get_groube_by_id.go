@@ -148,10 +148,66 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	events := []map[string]any{}
+	if group.MemberStatus == "member" {
+		eventsRows, err := key.DB.Query(`
+			SELECT ge.id, ge.creator_id, u.username, u.first_name || ' ' || u.last_name AS creator_name,
+				u.avatar, ge.title, ge.description, ge.event_date, ge.created_at,
+				(SELECT COUNT(*) FROM group_event_responses er WHERE er.event_id = ge.id AND er.response = 'going') AS going_count,
+				(SELECT COUNT(*) FROM group_event_responses er WHERE er.event_id = ge.id AND er.response = 'not_going') AS not_going_count,
+				(SELECT response FROM group_event_responses er WHERE er.event_id = ge.id AND er.user_id = ?) AS user_response
+			FROM group_events ge
+			JOIN users u ON ge.creator_id = u.id
+			WHERE ge.group_id = ?
+			ORDER BY ge.event_date DESC
+		`, userID, groupID)
+		if err == nil {
+			defer eventsRows.Close()
+			for eventsRows.Next() {
+				var id int
+				var creatorID int
+				var username string
+				var creatorName string
+				var avatar sql.NullString
+				var title string
+				var description string
+				var eventDate string
+				var createdAt string
+				var goingCount int
+				var notGoingCount int
+				var userResponse sql.NullString
+				if err := eventsRows.Scan(&id, &creatorID, &username, &creatorName, &avatar, &title, &description, &eventDate, &createdAt, &goingCount, &notGoingCount, &userResponse); err != nil {
+					continue
+				}
+				event := map[string]any{
+					"id":              id,
+					"creator_id":      creatorID,
+					"username":        username,
+					"creator_name":    creatorName,
+					"title":           title,
+					"description":     description,
+					"event_date":      eventDate,
+					"created_at":      createdAt,
+					"going_count":     goingCount,
+					"not_going_count": notGoingCount,
+					"user_response":   nil,
+				}
+				if userResponse.Valid {
+					event["user_response"] = userResponse.String
+				}
+				if avatar.Valid {
+					event["avatar"] = avatar.String
+				}
+				events = append(events, event)
+			}
+		}
+	}
+
 	response := map[string]interface{}{
 		"group":   group,
 		"members": members,
 		"posts":   posts,
+		"events":  events,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
