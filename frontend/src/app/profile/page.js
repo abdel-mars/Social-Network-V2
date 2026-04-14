@@ -214,7 +214,7 @@ export default function ProfilePage() {
           {posts && posts.length > 0 ? (
             <div className={styles.postsFeed}>
               {posts.map((post) => (
-                <RenderPosts key={post.id} post={post} setPosts={setPosts} />
+                <RenderPosts key={post.group_id ? `group_${post.id}` : `post_${post.id}`} post={post} setPosts={setPosts} />
               ))}
             </div>
           ) : (

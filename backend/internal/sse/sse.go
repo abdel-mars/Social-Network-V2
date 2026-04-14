@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	key "social-network-backend/internal/repository"
 )
@@ -95,12 +96,18 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("X-Accel-Buffering", "no") // Disable Nginx buffering if present
+	w.Header().Set("X-Accel-Buffering", "no")
+
+	// Flush immediately to signal the connection is established
+	flusher.Flush()
 
 	ch := Register(userID)
 	defer Unregister(userID)
 
 	fmt.Printf("[SSE] user %d connected\n", userID)
+
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
 
 	ctx := r.Context()
 	for {
@@ -108,6 +115,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		case <-ctx.Done():
 			fmt.Printf("[SSE] user %d disconnected\n", userID)
 			return
+		case <-ticker.C:
+			// Send a keep-alive comment
+			fmt.Fprintf(w, ": keep-alive\n\n")
+			flusher.Flush()
 		case data, open := <-ch:
 			if !open {
 				return

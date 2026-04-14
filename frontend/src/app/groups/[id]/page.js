@@ -352,7 +352,7 @@ export default function GroupDetailsPage() {
                 ) : (
                   posts.map((post) => (
                     <RenderPosts
-                      key={post.id}
+                      key={post.group_id ? `group_${post.id}` : `post_${post.id}`}
                       post={post}
                       setPosts={setPosts}
                     />

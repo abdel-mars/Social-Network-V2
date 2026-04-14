@@ -112,3 +112,21 @@
   font-size: 11px;
   color: var(--text-muted);
 }
+
+.clearBtn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+
+.clearBtn:hover {
+  background: var(--accent-10);
+  color: var(--accent-hover);
+}

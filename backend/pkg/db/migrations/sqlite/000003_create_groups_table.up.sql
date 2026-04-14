@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS group_members (
     FOREIGN KEY (group_id) REFERENCES groups(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
 CREATE TABLE IF NOT EXISTS group_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     group_id INTEGER NOT NULL,
@@ -37,4 +38,37 @@ CREATE TABLE IF NOT EXISTS group_event_responses (
     UNIQUE(event_id, user_id),
     FOREIGN KEY (event_id) REFERENCES group_events(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS group_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    image TEXT,
+    creator_id INTEGER NOT NULL,
+    group_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (creator_id) REFERENCES users(id),
+    FOREIGN KEY (group_id) REFERENCES groups(id)
+);
+
+CREATE TABLE IF NOT EXISTS group_post_reactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    group_post_id INTEGER NOT NULL,
+    reaction_type TEXT NOT NULL CHECK (reaction_type IN ('like', 'dislike')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, group_post_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_post_id) REFERENCES group_posts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS group_post_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    group_post_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_post_id) REFERENCES group_posts(id) ON DELETE CASCADE
 );

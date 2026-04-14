@@ -30,7 +30,7 @@ function requiresInteraction(notification) {
 }
 
 export function NotificationPanel() {
-  const { notifications, notificationCount, markNotificationsRead } = useNotifications();
+  const { notifications, notificationCount, markNotificationsRead, clearAllNotifications } = useNotifications();
 
   const handleRead = async (id) => {
     await markNotificationsRead([id]);
@@ -42,7 +42,16 @@ export function NotificationPanel() {
         <Bell size={16} />
         <span>Notifications</span>
         {notificationCount > 0 && (
-          <span className={styles.badge}>{notificationCount}</span>
+          <>
+            <span className={styles.badge}>{notificationCount}</span>
+            <button 
+              className={styles.clearBtn} 
+              onClick={clearAllNotifications}
+              title="Clear all notifications"
+            >
+              Clear all
+            </button>
+          </>
         )}
       </div>
 

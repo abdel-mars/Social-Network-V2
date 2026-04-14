@@ -9,20 +9,8 @@ help:
 	@echo "  dev               - Init DB then start backend and frontend (parallel)"
 
 backend-init-db:
-	@echo "Initializing backend SQLite DB..."
-	@# run full init inside a single shell so we can early-skip cleanly
-	@bash -c '\
-	if [ -f backend/database/forum.db ]; then \
-		echo "backend/database/forum.db already exists — skipping DB init"; \
-	else \
-		command -v sqlite3 >/dev/null 2>&1 || { echo "sqlite3 not found; install sqlite3 or run \"make backend-run\" to let the server create the DB automatically"; exit 0; }; \
-		mkdir -p backend/database; \
-		sqlite3 backend/database/forum.db < backend/database/schema.sql; \
-		sqlite3 backend/database/forum.db < backend/database/groups.sql; \
-		sqlite3 backend/database/forum.db < backend/database/group_posts.sql; \
-		sqlite3 backend/database/forum.db < backend/database/notification.sql; \
-		echo "Database initialized at backend/database/forum.db"; \
-	fi'
+	@echo "Migrations are now handled autonomously by golang-migrate in the Go backend."
+	@mkdir -p backend/database
 
 backend-run:
 	@command -v go >/dev/null 2>&1 || { echo "go executable not found; please install Go to run the backend"; exit 1; }

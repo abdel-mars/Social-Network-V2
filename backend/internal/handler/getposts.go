@@ -92,7 +92,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
         return nil, err
     }
     defer rows.Close()
-    var posts []get.Posts
+    posts := []get.Posts{}
     for rows.Next() {
         var p get.Posts
         var userReaction sql.NullString

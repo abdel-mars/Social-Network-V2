@@ -57,6 +57,7 @@ func Mux() *http.ServeMux {
 	social.HandleFunc("/Friends", midle.AuthMiddleware(handler.GetFriendlist))
 	social.HandleFunc("/notifications", midle.AuthMiddleware(handler.Notification))
 	social.HandleFunc("/notifications/read", midle.AuthMiddleware(handler.MarkNotificationsRead))
+	social.HandleFunc("/notifications/clear", midle.AuthMiddleware(handler.ClearNotifications))
 	social.HandleFunc("/request_follow", midle.AuthMiddleware(handler.Accept_or_reject))
 	social.HandleFunc("/Create_Group", midle.AuthMiddleware(handler.Create_Group))
 	social.HandleFunc("/Get_Groups", midle.AuthMiddleware(handler.Get_Groups))

@@ -58,9 +58,26 @@ export function ChatProvider({ children }) {
         setTotalUnreadCount(total);
     }, [unreadCounts]);
 
+    const [userId, setUserId] = useState(null);
+
+    // Poll for userId changes (e.g. login/logout)
     useEffect(() => {
-        const userId = localStorage.getItem("userId");
-        if (!userId) return;
+        const checkUser = () => {
+            const currentId = localStorage.getItem("userId");
+            if (currentId !== userId) {
+                setUserId(currentId);
+            }
+        };
+        checkUser();
+        const interval = setInterval(checkUser, 2000);
+        return () => clearInterval(interval);
+    }, [userId]);
+
+    useEffect(() => {
+        if (!userId) {
+            setSocket(null);
+            return;
+        }
 
         fetchUnreadCounts();
 
@@ -68,44 +85,64 @@ export function ChatProvider({ children }) {
         socketRef.current = ws;
         setSocket(ws);
 
+        ws.onopen = () => {
+            console.log("[Chat] WebSocket connected");
+        };
+
         const handleMessage = (event) => {
-            const data = JSON.parse(event.data);
-            const currentUserId = parseInt(localStorage.getItem("userId"));
+            try {
+                const data = JSON.parse(event.data);
+                const currentUserId = parseInt(localStorage.getItem("userId"));
 
-            if (data.type === "chat") {
-                const msg = data;
-                if (msg.recipient_id === currentUserId) {
-                    setUnreadCounts((prev) => {
-                        const newCount = (prev[msg.sender_id] || 0) + 1;
-                        return { ...prev, [msg.sender_id]: newCount };
-                    });
+                if (data.type === "chat") {
+                    const msg = data;
+                    if (msg.recipient_id === currentUserId) {
+                        setUnreadCounts((prev) => {
+                            const newCount = (prev[msg.sender_id] || 0) + 1;
+                            return { ...prev, [msg.sender_id]: newCount };
+                        });
 
-                    if (pathname !== "/chat") {
-                        setLastNotification({
-                            sender_id: msg.sender_id,
-                            sender_name: msg.sender?.username || "Someone",
-                            content: msg.content,
-                            sent_at: msg.sent_at,
+                        if (pathname !== "/chat") {
+                            setLastNotification({
+                                sender_id: msg.sender_id,
+                                sender_name: msg.sender?.username || "Someone",
+                                content: msg.content,
+                                sent_at: msg.sent_at,
+                            });
+                        }
+                    }
+                } else if (data.type === "read_receipt") {
+                    const { sender_id, recipient_id } = data;
+                    if (recipient_id === currentUserId) {
+                        setUnreadCounts((prev) => {
+                            const newCounts = { ...prev };
+                            delete newCounts[sender_id];
+                            return newCounts;
                         });
                     }
                 }
-            } else if (data.type === "read_receipt") {
-                const { sender_id, recipient_id } = data;
-                // If I am the one who read the messages (all my tabs should sync)
-                if (recipient_id === currentUserId) {
-                    setUnreadCounts((prev) => {
-                        const newCounts = { ...prev };
-                        delete newCounts[sender_id];
-                        return newCounts;
-                    });
-                }
+            } catch (err) {
+                console.error("[Chat] Failed to parse message:", err);
             }
         };
 
         ws.addEventListener("message", handleMessage);
 
-        const handleUnload = () => ws.close();
+        const handleUnload = () => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+        };
         window.addEventListener("beforeunload", handleUnload);
+
+        ws.onclose = (event) => {
+            if (event.wasClean) {
+                console.log(`[Chat] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+            } else {
+                // Connection died (e.g. server down)
+                console.log("[Chat] Connection died");
+            }
+        };
 
         return () => {
             window.removeEventListener("beforeunload", handleUnload);
@@ -113,7 +150,7 @@ export function ChatProvider({ children }) {
             ws.close();
             setSocket(null);
         };
-    }, [fetchUnreadCounts, pathname]);
+    }, [fetchUnreadCounts, userId]);
 
     return (
         <ChatContext.Provider

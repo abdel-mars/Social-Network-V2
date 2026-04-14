@@ -19,8 +19,22 @@ export function NotificationsProvider({ children }) {
   const pathname = usePathname();
   const [notifications, setNotifications] = useState([]);
 
+  const [userId, setUserId] = useState(null);
+
+  // Poll for userId changes (e.g. login/logout)
   useEffect(() => {
-    const userId = window.localStorage.getItem("userId");
+    const checkUser = () => {
+      const currentId = window.localStorage.getItem("userId");
+      if (currentId !== userId) {
+        setUserId(currentId);
+      }
+    };
+    checkUser();
+    const interval = setInterval(checkUser, 2000);
+    return () => clearInterval(interval);
+  }, [userId]);
+
+  useEffect(() => {
     if (!userId) {
       setNotifications([]);
       return;
@@ -32,7 +46,10 @@ export function NotificationsProvider({ children }) {
       method: "GET",
       credentials: "include",
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Auth failed");
+        return res.json();
+      })
       .then((data) => {
         if (isMounted && Array.isArray(data)) {
           setNotifications(data);
@@ -44,13 +61,16 @@ export function NotificationsProvider({ children }) {
       withCredentials: true,
     });
 
+    eventSource.onopen = () => {
+      console.log("[SSE] Connected successfully");
+    };
+
     eventSource.onmessage = (event) => {
       try {
         let incoming = JSON.parse(event.data);
         if (!Array.isArray(incoming)) {
           incoming = [incoming];
         }
-
         setNotifications((prev) => mergeNotifications(prev, incoming));
       } catch (err) {
         console.error("Failed to parse notification event:", err);
@@ -58,6 +78,8 @@ export function NotificationsProvider({ children }) {
     };
 
     eventSource.onerror = (err) => {
+      // Don't log error if the connection was closed intentionally or by navigate
+      if (eventSource.readyState === EventSource.CLOSED) return;
       console.error("SSE error:", err);
     };
 
@@ -65,7 +87,7 @@ export function NotificationsProvider({ children }) {
       isMounted = false;
       eventSource.close();
     };
-  }, [pathname]);
+  }, [userId]); // Only reconnect if the user ID actually changes
 
   const removeNotifications = (ids) => {
     if (!Array.isArray(ids) || ids.length === 0) return;
@@ -94,11 +116,29 @@ export function NotificationsProvider({ children }) {
     }
   };
 
+  const clearAllNotifications = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/notifications/clear", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to clear notifications");
+      }
+
+      setNotifications([]);
+    } catch (err) {
+      console.error("Failed to clear notifications:", err);
+    }
+  };
+
   const value = useMemo(
     () => ({
       notifications,
       notificationCount: notifications.length,
       markNotificationsRead,
+      clearAllNotifications,
       removeNotifications,
       setNotifications,
     }),
