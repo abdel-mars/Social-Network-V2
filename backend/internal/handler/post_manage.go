@@ -8,9 +8,11 @@ import (
 )
 
 type PostUpdateRequest struct {
-	PostID  int    `json:"post_id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+	PostID    int    `json:"post_id"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	Privacy   string `json:"privacy"`
+	ViewerIDs []int  `json:"viewer_ids"`
 }
 
 type PostDeleteRequest struct {
@@ -46,21 +48,26 @@ func Update_Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Privacy == "" {
+		req.Privacy = "public"
+	}
+
 	_, err = key.DB.Exec(`
 		UPDATE posts
-		SET title = ?, content = updated_content, updated_at = CURRENT_TIMESTAMP
-		FROM (SELECT ? AS updated_content)
+		SET title = ?, content = ?, privacy = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
-	`, req.Title, req.Content, req.PostID)
+	`, req.Title, req.Content, req.Privacy, req.PostID)
 	if err != nil {
-		_, err = key.DB.Exec(`
-			UPDATE posts
-			SET title = ?, content = ?, updated_at = CURRENT_TIMESTAMP
-			WHERE id = ?
-		`, req.Title, req.Content, req.PostID)
-		if err != nil {
-			http.Error(w, "Failed to update post", http.StatusInternalServerError)
-			return
+		http.Error(w, "Failed to update post", http.StatusInternalServerError)
+		return
+	}
+
+	// Always clear out old viewers to avoid stale relations
+	key.DB.Exec("DELETE FROM post_viewers WHERE post_id = ?", req.PostID)
+
+	if req.Privacy == "private" && len(req.ViewerIDs) > 0 {
+		for _, viewerID := range req.ViewerIDs {
+			key.DB.Exec("INSERT INTO post_viewers (post_id, user_id) VALUES (?, ?)", req.PostID, viewerID)
 		}
 	}
 

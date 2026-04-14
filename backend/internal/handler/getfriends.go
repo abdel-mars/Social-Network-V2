@@ -48,3 +48,46 @@ func GetFriendlist(w http.ResponseWriter, r *http.Request){
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(friends)
 }
+
+func GetMyFollowers(w http.ResponseWriter, r *http.Request) {
+    userID, ok := r.Context().Value(repo.UserIDKey).(int)
+    if !ok {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
+
+    rows, err := repo.DB.Query(`
+        SELECT u.id, u.username, u.first_name || ' ' || ifnull(u.last_name, '') AS full_name, u.avatar
+        FROM users u
+        JOIN followers f ON f.follower_id = u.id
+        WHERE f.followed_id = ? AND f.status = 'accepted';
+    `, userID)
+    if err != nil {
+        http.Error(w, "Query error", http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close()
+
+    type Follower struct {
+        ID        int     `json:"id"`
+        Username  string  `json:"username"`
+        FullName  string  `json:"full_name"`
+        ImagePath *string `json:"image_path"` 
+    }
+    var followers []Follower
+    for rows.Next() {
+        var f Follower
+        if err := rows.Scan(&f.ID, &f.Username, &f.FullName, &f.ImagePath); err != nil {
+            http.Error(w, "Failed to scan follower", http.StatusInternalServerError)
+            return
+        }
+        followers = append(followers, f)
+    }
+
+    if followers == nil {
+        followers = []Follower{}
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(followers)
+}

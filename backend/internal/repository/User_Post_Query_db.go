@@ -1,8 +1,7 @@
 package repository
 
 const (
-	// INSERT queries
-  INSERT_NEW_POST = `INSERT INTO posts (user_id, title, content, image_path) VALUES (?, ?, ?, ?);`
+  INSERT_NEW_POST = `INSERT INTO posts (user_id, title, content, image_path, privacy) VALUES (?, ?, ?, ?, ?);`
 	MAP_POSTS_WITH_CATEGORY = `INSERT INTO post_categories (post_id, category_id) VALUES (?, ?);
                             UPDATE categories_count SET post_count = post_count + 1 WHERE category_id = ?;`
 

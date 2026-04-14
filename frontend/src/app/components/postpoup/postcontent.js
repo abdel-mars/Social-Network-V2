@@ -21,6 +21,9 @@ export function PostModel({
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editPrivacy, setEditPrivacy] = useState("public");
+  const [editViewerIds, setEditViewerIds] = useState([]);
+  const [followers, setFollowers] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const postType = selectedPost?.group_id ? "group_post" : "post";
   const canManagePost = Number(currentUserId) === Number(selectedPost?.user_id);
@@ -34,9 +37,28 @@ export function PostModel({
     if (!selectedPost) return;
     setEditTitle(selectedPost.title || "");
     setEditContent(selectedPost.content || "");
+    setEditPrivacy(selectedPost.privacy || "public");
+    setEditViewerIds([]); // Clear because we don't have existing IDs easily
     setIsEditing(false);
     setShowDeleteConfirm(false);
   }, [selectedPost]);
+
+  useEffect(() => {
+    if (isEditing && postType === "post" && followers.length === 0) {
+      fetch("http://localhost:8080/my-followers", { credentials: "include" })
+        .then(res => res.json())
+        .then(data => setFollowers(data || []))
+        .catch(err => console.error("Failed to fetch followers:", err));
+    }
+  }, [isEditing, postType, followers.length]);
+
+  const toggleViewer = (id) => {
+    if (editViewerIds.includes(id)) {
+      setEditViewerIds(editViewerIds.filter(vId => vId !== id));
+    } else {
+      setEditViewerIds([...editViewerIds, id]);
+    }
+  };
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost) return;
@@ -77,6 +99,8 @@ export function PostModel({
           post_id: selectedPost.id,
           title: editTitle,
           content: editContent,
+          privacy: editPrivacy,
+          viewer_ids: editViewerIds,
         }),
       });
       if (!res.ok) throw new Error("Failed to update post");
@@ -186,6 +210,44 @@ export function PostModel({
                 placeholder="Post content"
                 rows={5}
               />
+
+              {postType === "post" && (
+                <div style={{ marginTop: "10px", marginBottom: "10px" }}>
+                  <select
+                    value={editPrivacy}
+                    onChange={(e) => setEditPrivacy(e.target.value)}
+                    className={styles.editInput}
+                    style={{ padding: "8px", appearance: "auto" }}
+                  >
+                    <option value="public">🌍 Public (Everyone)</option>
+                    <option value="almost_private">👥 Almost Private (Followers Only)</option>
+                    <option value="private">🔒 Private (Specific Followers)</option>
+                  </select>
+
+                  {editPrivacy === "private" && (
+                    <div style={{ marginTop: "10px", background: "var(--bg-card)", padding: "10px", borderRadius: "8px" }}>
+                      <p style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "5px" }}>Select who can see this:</p>
+                      {followers.length > 0 ? (
+                        <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid var(--border)", padding: "10px", borderRadius: "8px" }}>
+                          {followers.map(f => (
+                            <label key={f.id} style={{ display: "flex", gap: "8px", cursor: "pointer", marginBottom: "6px" }}>
+                              <input 
+                                type="checkbox" 
+                                checked={editViewerIds.includes(f.id)}
+                                onChange={() => toggleViewer(f.id)}
+                              />
+                              {f.full_name || f.username}
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>You have no followers to select.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className={styles.editActions}>
                 <button type="button" className={styles.secondaryBtn} onClick={() => setIsEditing(false)} disabled={saving}>
                   Cancel

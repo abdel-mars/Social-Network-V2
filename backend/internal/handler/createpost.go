@@ -40,6 +40,21 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 
     title := r.FormValue("title")
     content := r.FormValue("content")
+    privacy := r.FormValue("privacy")
+    if privacy == "" {
+        privacy = "public"
+    }
+
+	var viewerIDs []int
+	if privacy == "private" {
+		viewersStr := r.FormValue("viewer_ids")
+		if viewersStr != "" {
+			var ids []int
+			if err := json.Unmarshal([]byte(viewersStr), &ids); err == nil {
+				viewerIDs = ids
+			}
+		}
+	}
 
     // regular posts don't use group_id
 
@@ -60,7 +75,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
         io.Copy(f, file)
     }
 
-    ID, err := set.AddNewPost(id, title, content, imagePath)
+    ID, err := set.AddNewPost(id, title, content, imagePath, privacy, viewerIDs)
     if err != nil {
         http.Error(w, "Database error", http.StatusInternalServerError)
         fmt.Println("There is a problem in the database:", err)
