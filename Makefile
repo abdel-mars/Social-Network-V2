@@ -36,6 +36,10 @@ frontend-run:
 		npm install --no-audit --no-fund; \
 	else \
 		echo "node_modules present — skipping npm install"; \
+	fi && \
+	if [ ! -d node_modules/emoji-picker-react ]; then \
+		echo "emoji-picker-react not found — installing"; \
+		npm install emoji-picker-react --no-audit --no-fund; \
 	fi && npm run dev
 
 dev: backend-init-db
