@@ -8,8 +8,10 @@ import { PostModel } from "../postpoup/postcontent";
 import { useState, useEffect } from "react";
 import { MessageSquare } from "lucide-react";
 import { ImagePreview } from "../ui/ImagePreview";
+import { useRouter } from "next/navigation";
 
 export function RenderPosts({ post, setPosts }) {
+  const router = useRouter();
   const [selectedPost, setSelectedPost] = useState(null);
   const [newComment, setNewcomment] = useState("");
   const [comments, setComments] = useState([]);
@@ -47,7 +49,16 @@ export function RenderPosts({ post, setPosts }) {
         onClick={() => setSelectedPost(post)}
       >
         {/* Author row */}
-        <div className={styles.authorRow}>
+        <div 
+          className={styles.authorRow}
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/profile?id=${post.user_id}`);
+          }}
+          style={{ cursor: "pointer", transition: "opacity 0.2s" }}
+          onMouseOver={(e) => e.currentTarget.style.opacity = "0.8"}
+          onMouseOut={(e) => e.currentTarget.style.opacity = "1"}
+        >
           <img
             src={post.avatar ? `http://localhost:8080/${post.avatar}` : "/default-avatar.png"}
             alt="Avatar"

@@ -1,9 +1,9 @@
 import { createPortal } from "react-dom";
 import { AlertTriangle, Pencil, Trash2, X } from "lucide-react";
 import { timeAgo } from "../../lib/time";
-import { ReactionButtons } from "../reactions/ReactionButtons";
 import { ImagePreview } from "../ui/ImagePreview";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./postcontent.module.css";
 
 export function PostModel({
@@ -15,6 +15,7 @@ export function PostModel({
   setNewComment,
   handleReaction,
 }) {
+  const router = useRouter();
   const [previewImage, setPreviewImage] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -148,7 +149,17 @@ export function PostModel({
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.header}>
-          <div className={styles.authorRow}>
+          <div 
+            className={styles.authorRow}
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/profile?id=${selectedPost.user_id}`);
+              setSelectedPost(null);
+            }}
+            style={{ cursor: "pointer", transition: "opacity 0.2s" }}
+            onMouseOver={(e) => e.currentTarget.style.opacity = "0.8"}
+            onMouseOut={(e) => e.currentTarget.style.opacity = "1"}
+          >
             <img
               src={selectedPost.avatar ? `http://localhost:8080/${selectedPost.avatar}` : "/default-avatar.png"}
               alt="avatar"
@@ -293,7 +304,18 @@ export function PostModel({
               comment.map((c) => (
                 <div key={c.id} className={styles.commentItem}>
                   <div className={styles.commentMeta}>
-                    <span className={styles.commentUser}>@{c.user_name || c.user_id}</span>
+                    <span 
+                      className={styles.commentUser}
+                      onClick={() => {
+                        router.push(`/profile?id=${c.user_id}`);
+                        setSelectedPost(null);
+                      }}
+                      style={{ cursor: "pointer", transition: "color 0.2s" }}
+                      onMouseOver={(e) => e.currentTarget.style.color = "var(--primary)"}
+                      onMouseOut={(e) => e.currentTarget.style.color = ""}
+                    >
+                      @{c.user_name || c.user_id}
+                    </span>
                     <span className={styles.commentTime}>{timeAgo(c.created_at)}</span>
                   </div>
                   <p className={styles.commentText}>{c.text}</p>

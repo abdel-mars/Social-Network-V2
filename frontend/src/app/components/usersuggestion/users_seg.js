@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./users_seg.module.css";
 import { FollowButton } from "../follow/FollowButton";
 
 export default function UsersList() {
+  const router = useRouter();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState({});
@@ -61,14 +63,19 @@ export default function UsersList() {
           const status = following[u.user_id];
           return (
             <div key={u.user_id} className={styles.userItem}>
-              <img
-                src={u.image_path ? `http://localhost:8080/${u.image_path}` : "/default-avatar.png"}
-                alt={u.username}
-                className={styles.avatar}
-              />
-              <div className={styles.info}>
-                <span className={styles.name}>{u.username}</span>
-                <span className={styles.fullName}>{u.full_name || ""}</span>
+              <div 
+                style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, cursor: "pointer" }}
+                onClick={() => router.push(`/profile?id=${u.user_id}`)}
+              >
+                <img
+                  src={u.image_path ? `http://localhost:8080/${u.image_path}` : "/default-avatar.png"}
+                  alt={u.username}
+                  className={styles.avatar}
+                />
+                <div className={styles.info}>
+                  <span className={styles.name}>{u.username}</span>
+                  <span className={styles.fullName}>{u.full_name || ""}</span>
+                </div>
               </div>
               <FollowButton
                 status={status || "not_following"}

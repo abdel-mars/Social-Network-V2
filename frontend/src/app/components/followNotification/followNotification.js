@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { timeAgo } from "../../lib/time";
 import { useNotifications } from "../notifications/NotificationsContext";
+import { useRouter } from "next/navigation";
 import styles from "./notification.module.css";
 import { Check, X, UserPlus, UserCheck } from "lucide-react";
 
 export default function FollowRequest({ request }) {
+  const router = useRouter();
   const { markNotificationsRead, removeNotifications } = useNotifications();
   const [status, setStatus] = useState(
     request.state === "accepted"
@@ -68,11 +70,21 @@ export default function FollowRequest({ request }) {
         src={request.sender.avatar ? `http://localhost:8080/${request.sender.avatar}` : "/default-avatar.png"}
         alt={request.sender.first_name}
         onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
+        onClick={(e) => { e.stopPropagation(); router.push(`/profile?id=${request.sender.id}`); }}
+        style={{ cursor: "pointer" }}
       />
       
       <div className={styles.content}>
         <div className={styles.textLine}>
-          <span className={styles.username}>@{request.sender.username}</span>{" "}
+          <span 
+            className={styles.username}
+            onClick={(e) => { e.stopPropagation(); router.push(`/profile?id=${request.sender.id}`); }}
+            style={{ cursor: "pointer", transition: "color 0.2s" }}
+            onMouseOver={(e) => e.currentTarget.style.color = "var(--primary)"}
+            onMouseOut={(e) => e.currentTarget.style.color = ""}
+          >
+            @{request.sender.username}
+          </span>{" "}
           {hasFollowedBack ? "followed you back" : "requested to follow you"}
         </div>
 
