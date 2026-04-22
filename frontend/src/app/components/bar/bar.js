@@ -9,6 +9,7 @@ import {
 import { useTheme } from "../ui/ThemeContext";
 import { useChat } from "../chat/ChatContext";
 import AccentPicker from "../ui/AccentPicker";
+import SearchBar from "./SearchBar";
 import { NotificationPanel } from "../notifications/notificationpanel";
 import { useNotifications } from "../notifications/NotificationsContext";
 import style from "./bar.module.css";
@@ -77,19 +78,23 @@ export function Renderbar() {
       <header className={style.topbar}>
         <div className={style.topbarInner}>
 
-          {/* Logo */}
-          <div className={style.logo} onClick={() => router.push("/home")}>
-            <div className={style.logoIcon}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
-                <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35" />
-                <circle cx="12" cy="12" r="3" fill="currentColor" />
-              </svg>
+          {/* Left section: Logo + Search */}
+          <div className={style.leftSection}>
+            <div className={style.logo} onClick={() => router.push("/home")}>
+              <div className={style.logoIcon}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
+                  <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35" />
+                  <circle cx="12" cy="12" r="3" fill="currentColor" />
+                </svg>
+              </div>
+              <span className={style.logoText}>01Social</span>
             </div>
-            <span className={style.logoText}>01Social</span>
+            <SearchBar />
           </div>
 
           {/* Center nav pill */}
+          <div className={style.centerSection}>
           <nav className={style.navPill}>
             {NAV_ITEMS.map(({ label, path, icon: Icon }) => {
               const { totalUnreadCount } = useChat();
@@ -114,6 +119,7 @@ export function Renderbar() {
               );
             })}
           </nav>
+          </div>
 
           {/* Right controls */}
           <div className={style.rightControls}>
@@ -189,6 +195,9 @@ export function Renderbar() {
       {mobileOpen && (
         <div className={style.mobileDrawer} onClick={() => setMobileOpen(false)}>
           <div className={style.mobileMenu} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: "8px 0 12px 0" }}>
+              <SearchBar onMobileNav={() => setMobileOpen(false)} />
+            </div>
             {NAV_ITEMS.map(({ label, path, icon: Icon }) => (
               <button
                 key={path}

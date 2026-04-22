@@ -16,14 +16,28 @@
 }
 
 .topbarInner {
-  max-width: 1100px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  gap: 16px;
+  padding: 0 40px;
+  position: relative;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.centerSection {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
 }
 
 /* Logo */
@@ -100,8 +114,8 @@
 .rightControls {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .iconBtn {
@@ -265,11 +279,20 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 950px) {
+  .topbarInner {
+    display: flex;
+    justify-content: space-between;
+  }
   .navPill { display: none; }
+  .centerSection { display: none; }
+}
+
+@media (max-width: 768px) {
   .hamburger { display: flex; }
   .logoutBtn { display: none; }
   .avatarBtn { display: none; }
+  .rightControls { gap: 4px; }
 }
 
 @media (max-width: 400px) {
