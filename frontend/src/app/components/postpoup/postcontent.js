@@ -2,6 +2,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, Pencil, Trash2, X } from "lucide-react";
 import { timeAgo } from "../../lib/time";
 import { ImagePreview } from "../ui/ImagePreview";
+import { ReactionButtons } from "../reactions/ReactionButtons";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./postcontent.module.css";
