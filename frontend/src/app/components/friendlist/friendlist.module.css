@@ -4,33 +4,53 @@
   gap: 8px;
 }
 
-.toggleBtn {
+.searchContainer {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.searchInput {
   width: 100%;
-  padding: 8px 12px;
+  height: 32px;
+  padding: 0 12px 0 32px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
   background: var(--surface-2);
-  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   font-size: 13px;
-  font-weight: 600;
-  font-family: 'Nunito', sans-serif;
-  cursor: pointer;
   transition: all var(--transition);
 }
 
-.toggleBtn:hover:not(:disabled) {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border-color: var(--accent-light);
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
 }
 
 .list {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  max-height: 260px; /* ~5 items height limit */
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.list::-webkit-scrollbar {
+  width: 4px;
+}
+.list::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 4px;
 }
 
 .friendItem {

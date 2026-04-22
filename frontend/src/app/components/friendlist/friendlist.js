@@ -1,15 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { Search, Users } from "lucide-react";
 import styles from "./friendlist.module.css";
 
 export default function FriendsList() {
   const [friends, setFriends] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [visibleCount, setVisibleCount] = useState(5);
   const router = useRouter();
+  const listRef = useRef(null);
+
+  // Fetch immediately on mount
+  useEffect(() => {
+    fetchFriends();
+  }, []);
 
   const fetchFriends = async () => {
     setLoading(true);
@@ -17,8 +24,7 @@ export default function FriendsList() {
       const res = await fetch("http://localhost:8080/Friends", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
-      setFriends(data);
-      setVisible(true);
+      setFriends(data || []);
     } catch (err) {
       console.error("Error fetching users:", err);
     } finally {
@@ -27,48 +33,88 @@ export default function FriendsList() {
   };
 
   useEffect(() => {
-    const handleUpdate = () => { if (visible) fetchFriends(); };
+    const handleUpdate = () => fetchFriends();
     window.addEventListener("followUpdated", handleUpdate);
     return () => window.removeEventListener("followUpdated", handleUpdate);
-  }, [visible]);
+  }, []);
 
-  const toggleVisible = () => {
-    if (visible) setVisible(false);
-    else fetchFriends();
+  // Compute filtered friends based on search term
+  const filteredFriends = useMemo(() => {
+    if (!searchTerm) return friends;
+    const lowerQ = searchTerm.toLowerCase();
+    return friends.filter(
+      (f) =>
+        f.username?.toLowerCase().includes(lowerQ) ||
+        f.full_name?.toLowerCase().includes(lowerQ)
+    );
+  }, [friends, searchTerm]);
+
+  // Handle scrolling threshold
+  const handleScroll = () => {
+    if (!listRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+    
+    // If scrolled near bottom (within 10px), show 5 more!
+    if (scrollHeight - scrollTop <= clientHeight + 10) {
+      if (visibleCount < filteredFriends.length) {
+        setVisibleCount((prev) => prev + 5);
+      }
+    }
   };
+
+  const currentVisible = filteredFriends.slice(0, visibleCount);
 
   return (
     <div className={styles.wrapper}>
-      <button id="friends-toggle-btn" onClick={toggleVisible} disabled={loading} className={styles.toggleBtn}>
-        {loading ? <Clock size={15} /> : visible ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-        <span>{loading ? "Loading..." : visible ? "Hide Friends" : "Show Friends"}</span>
-      </button>
+      {/* Search Input */}
+      <div className={styles.searchContainer}>
+        <Search size={14} className={styles.searchIcon} />
+        <input
+          type="text"
+          className={styles.searchInput}
+          placeholder="Search friends..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setVisibleCount(5); // Reset visible count when searching
+          }}
+        />
+      </div>
 
-      {visible && (
-        <div className={styles.list}>
-          {friends?.length > 0 ? (
-            friends.map((friend) => (
+      <div 
+        className={styles.list} 
+        onScroll={handleScroll}
+        ref={listRef}
+      >
+        {loading ? (
+          <p className={styles.empty}>Loading friends...</p>
+        ) : filteredFriends.length > 0 ? (
+          <>
+            {currentVisible.map((friend) => (
               <div
                 key={friend.id}
                 className={styles.friendItem}
-                onClick={() => { router.push(`/profile?id=${friend.id}`); setVisible(false); }}
+                onClick={() => router.push(`/profile?id=${friend.id}`)}
               >
-                {friend.image_path ? (
-                  <img src={`http://localhost:8080/${friend.image_path}`} alt="avatar" className={styles.avatar} />
-                ) : (
-                  <div className={styles.avatarFallback} />
-                )}
+                <img 
+                  src={friend.image_path ? `http://localhost:8080/${friend.image_path}` : "/default-avatar.png"} 
+                  alt="avatar" 
+                  className={styles.avatar} 
+                  onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
+                />
                 <div className={styles.info}>
                   <span className={styles.name}>{friend.full_name}</span>
                   <span className={styles.username}>@{friend.username}</span>
                 </div>
               </div>
-            ))
-          ) : (
-            !loading && <p className={styles.empty}>No friends yet.</p>
-          )}
-        </div>
-      )}
+            ))}
+          </>
+        ) : (
+          <p className={styles.empty}>
+            {searchTerm ? "No friends match your search." : "No friends yet."}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

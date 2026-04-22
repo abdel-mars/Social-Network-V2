@@ -8,7 +8,6 @@ import style from "./page.module.css";
 import { RenderPosts } from "../components/posts/post";
 import { Renderbar } from "../components/bar/bar";
 import { Renderformpost } from "../components/createpost/Createpost";
-import UsersList from "../components/usersuggestion/users_seg";
 import FriendsList from "../components/friendlist/friendlist";
 
 export default function Home() {
@@ -156,11 +155,8 @@ export default function Home() {
           <div className={style.rightCard}>
             <h3 className={style.rightCardTitle}>
               <Users size={16} />
-              Suggested Friends
+              Friends List
             </h3>
-            <UsersList />
-          </div>
-          <div className={style.rightCard}>
             <FriendsList />
           </div>
         </aside>
