@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail, Cake, VenusAndMars, Lock, Globe, UserCheck, UserX, Clock } from "lucide-react";
+import { Mail, Cake, VenusAndMars, UserCheck, UserX, Clock, UserX2 } from "lucide-react";
 import { RenderPosts } from "../components/posts/post";
 import { Renderbar } from "../components/bar/bar";
+import { FollowButton } from "../components/follow/FollowButton";
 import styles from "./page.module.css";
 import { useSearchParams } from "next/navigation";
 
@@ -16,12 +17,15 @@ export default function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [posts, setPosts] = useState([]);
   const [Myfriend, setFriends] = useState(false);
+  const [isFollower, setIsFollower] = useState(false); // New state
   const searchParams = useSearchParams();
   const userId = searchParams.get("id");
   const [loggedInUserId, setloggedInUserId] = useState(null);
   const [isPending, setIsPending] = useState(false);
   const [Pend, setPad] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let id = localStorage.getItem("userId");
@@ -32,24 +36,69 @@ export default function ProfilePage() {
   const canSeePosts = isOwnProfile || Myfriend || (user && user.is_private === 0);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setError("No user ID provided.");
+      return;
+    }
+    setError(null);
+    setUser(null);
     async function fetchProfile() {
       try {
         const res = await fetch(`http://localhost:8080/profile?id=${userId}`, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch user");
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          const msg =
+            res.status === 404
+              ? "User not found."
+              : res.status === 400
+              ? "Invalid user ID."
+              : body.message || "Something went wrong.";
+          setError(msg);
+          return;
+        }
         const data = await res.json();
         setUser(data.user);
         setFriends(data.isfriend);
         setPad(data.p);
+        setIsFollower(data.is_follower); // Store if they follow us
         setIsPrivate(data.user.is_private);
         setFollowersCount(data.followers_count || 0);
         setFollowingCount(data.following_count || 0);
       } catch (err) {
         console.error(err);
+        setError("Could not load profile. Please try again.");
       }
     }
     fetchProfile();
   }, [userId]);
+
+  // Real-time sync: listen for follow updates from other components
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      if (e.detail?.source === "profile") return;
+
+      if (e.detail && e.detail.followed_id === Number(userId)) {
+        const newStatus = e.detail.status;
+        if (newStatus === "following" || newStatus === "accepted") {
+          setFriends(true);
+          setIsPending(false);
+          setPad(false);
+          if (!Myfriend) setFollowersCount(prev => prev + 1);
+        } else if (newStatus === "pending") {
+          setFriends(false);
+          setIsPending(true);
+          setPad(true);
+        } else {
+          if (Myfriend) setFollowersCount(prev => Math.max(0, prev - 1));
+          setFriends(false);
+          setIsPending(false);
+          setPad(false);
+        }
+      }
+    };
+    window.addEventListener("followUpdated", handleUpdate);
+    return () => window.removeEventListener("followUpdated", handleUpdate);
+  }, [userId, Myfriend]);
 
   useEffect(() => {
     if (!userId || !user) return;
@@ -82,6 +131,7 @@ export default function ProfilePage() {
 
   const handleFollowToggle = async () => {
     try {
+      setFollowLoading(true);
       const res = await fetch("http://localhost:8080/toggle-follow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,15 +140,46 @@ export default function ProfilePage() {
       });
       if (!res.ok) throw new Error("Failed to toggle follow");
       const data = await res.json();
-      if (data.status === "pending") { setIsPending(true); setFriends(false); }
-      else if (data.status === "accepted") { setIsPending(false); setFriends(true); }
-      else { setIsPending(false); setPad(false); setFriends(false); }
+      const newStatus = data.status === "pending" ? "pending" : data.status === "accepted" ? "accepted" : "none";
+      
+      if (data.status === "pending") { 
+        setIsPending(true); setFriends(false); setPad(true);
+      }
+      else if (data.status === "accepted") { 
+        setIsPending(false); setFriends(true); setPad(false);
+      }
+      else { 
+        setIsPending(false); setPad(false); setFriends(false); 
+      }
+      
       setFollowersCount(data.followers_Count || 0);
-      setFollowingCount(data.FollowingCount || 0);
+      setFollowingCount(data.following_Count || 0);
+      
+      window.dispatchEvent(new CustomEvent("followUpdated", { 
+        detail: { followed_id: Number(userId), status: newStatus === "accepted" ? "following" : newStatus, source: "profile" } 
+      }));
     } catch (err) {
       console.error("Error toggling follow:", err);
+    } finally {
+      setFollowLoading(false);
     }
   };
+
+  if (error) return (
+    <div className={styles.pageRoot}>
+      <Renderbar />
+      <div className={styles.errorState}>
+        <div className={styles.errorIconWrapper}>
+          <UserX2 size={48} strokeWidth={1.5} />
+        </div>
+        <h2 className={styles.errorTitle}>Oops!</h2>
+        <p className={styles.errorMessage}>{error}</p>
+        <button className={styles.errorBackBtn} onClick={() => window.history.back()}>
+          ← Go Back
+        </button>
+      </div>
+    </div>
+  );
 
   if (!user) return (
     <div className={styles.pageRoot}>
@@ -149,19 +230,12 @@ export default function ProfilePage() {
                       Edit Profile
                     </button>
                   ) : (
-                    <button
-                      id="follow-toggle-btn"
-                      className={`${styles.followBtn} ${(isPending || Pend) ? styles.pending : Myfriend ? styles.following : ""}`}
-                      onClick={handleFollowToggle}
-                    >
-                      {(isPending || Pend) ? (
-                        <><Clock size={15} /> Pending</>
-                      ) : Myfriend ? (
-                        <><UserX size={15} /> Unfollow</>
-                      ) : (
-                        <><UserCheck size={15} /> Follow</>
-                      )}
-                    </button>
+                    <FollowButton
+                      status={(isPending || Pend) ? "pending" : Myfriend ? "accepted" : "not_following"}
+                      onToggle={handleFollowToggle}
+                      loading={followLoading}
+                      isFollower={isFollower}
+                    />
                   )}
                 </div>
               </div>

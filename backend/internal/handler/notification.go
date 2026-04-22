@@ -10,28 +10,16 @@ import (
 )
 
 func Notification(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")
-	fmt.Println("Hello world im her if you want <<--- ")
-	fmt.Println("=================================")
-	fmt.Println("=========================================")
-	fmt.Println("-===============================")
-	// Here it's about
-	// Get  the query to get unread notificacion by the id of the reciver !!
 	userId, ok := r.Context().Value(namix.UserIDKey).(int)
 	if !ok {
 		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
 	}
-	// Ok So i will need all data of the user who is send this data
-	// If It's Private
 	Notification, err := GetUnreadNotifications(userId)
 	if err != nil {
 		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
 	}
-	fmt.Println("The Notification oooooooooh My gOod")
-	fmt.Printf("The Current User %v\n", Notification)
-	// let's talk about that !
-	// I will Send To Back-End The Data Of This Current !
-	// here i will get data of the one who is send data !
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(Notification)
 }
@@ -40,7 +28,8 @@ func GetUnreadNotifications(userID int) ([]namix.Notification, error) {
 	rows, err := namix.DB.Query(`
 		SELECT 
 			n.id, n.type, n.message, n.state, n.created_at,
-			u.id, u.username, u.first_name, u.last_name, u.avatar, u.is_private,
+			u.id, u.username, u.first_name, u.last_name, u.avatar,
+			r.is_private,
 			EXISTS(
 				SELECT 1
 				FROM followers f
@@ -49,6 +38,7 @@ func GetUnreadNotifications(userID int) ([]namix.Notification, error) {
 			g.id, g.title
 		FROM notifications n
 		JOIN users u ON n.sender_id = u.id
+		JOIN users r ON n.user_id = r.id
 		LEFT JOIN groups g ON n.group_id = g.id
 		WHERE n.user_id = ?
 		  AND (
@@ -175,11 +165,18 @@ func ClearNotifications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update all unread or pending interactive notifications that haven't been responded to
 	query := `
 		UPDATE notifications
 		SET state = 'read'
-		WHERE user_id = ? AND state != 'read'
+		WHERE user_id = ? 
+		  AND state != 'read'
+		  AND NOT (
+		    type = 'Invitation_friendships' 
+		    AND state = 'unread' 
+		    AND EXISTS (
+		        SELECT 1 FROM users WHERE id = notifications.user_id AND is_private = 1
+		    )
+		  )
 	`
 
 	if _, err := namix.DB.Exec(query, userID); err != nil {
@@ -191,5 +188,3 @@ func ClearNotifications(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "All notifications cleared"})
 }
-
-

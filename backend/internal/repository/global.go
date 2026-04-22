@@ -122,11 +122,11 @@ type Posts struct {
 }
 
 type Sugg struct {
-	// format json
 	UserID    int     `json:"user_id"`
 	UserName  string  `json:"username"`
 	FullName  string  `json:"full_name"`
 	ImagePath *string `json:"image_path"`
+	IsPrivate bool    `json:"is_private"`
 }
 
 // ....<=====>....

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"encoding/json"
 	 
+	notificationgoroutine "social-network-backend/internal/notificationGoroutine"
 	repo "social-network-backend/internal/repository"
 )
 
@@ -22,6 +23,7 @@ func Accept_or_reject(w http.ResponseWriter, r *http.Request){
 	 	userID, ok := r.Context().Value(repo.UserIDKey).(int)
 		if ! ok {
 			http.Error(w, "Internal_server_Error", http.StatusInternalServerError)
+			return
 		} 
 		// Decode the JSON body into the struct
 		err := json.NewDecoder(r.Body).Decode(&req)
@@ -74,5 +76,15 @@ func addaccepstatus(userId, SenderID int, w http.ResponseWriter) {
 	if err != nil {
 		http.Error(w, "Failed to update notification", http.StatusInternalServerError)
 		return
+	}
+
+	// Notify the sender that their request was accepted
+	message := "Your follow request was accepted"
+	notifID, err := AddNotification(userId, SenderID, "follow_accepted", message)
+	if err == nil {
+		notif, err := GetNotificationByID(int(notifID))
+		if err == nil && notif != nil {
+			notificationgoroutine.SendNotification(*notif)
+		}
 	}
 }

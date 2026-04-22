@@ -8,11 +8,23 @@ const NotificationsContext = createContext(null);
 function mergeNotifications(current, incoming) {
   const existing = Array.isArray(current) ? current : [];
   const nextItems = Array.isArray(incoming) ? incoming : [incoming];
+
+  // For follow notifications, replace existing ones from the same sender
+  // instead of stacking duplicates
+  let filtered = [...existing];
+  for (const item of nextItems) {
+    if (item?.type === "Invitation_friendships" && item?.sender?.id) {
+      filtered = filtered.filter(
+        (n) => !(n.type === "Invitation_friendships" && n.sender?.id === item.sender.id)
+      );
+    }
+  }
+
   const uniqueItems = nextItems.filter(
-    (item) => item?.id && !existing.some((notif) => notif.id === item.id)
+    (item) => item?.id && !filtered.some((notif) => notif.id === item.id)
   );
 
-  return [...uniqueItems, ...existing];
+  return [...uniqueItems, ...filtered];
 }
 
 export function NotificationsProvider({ children }) {
@@ -68,6 +80,17 @@ export function NotificationsProvider({ children }) {
     eventSource.onmessage = (event) => {
       try {
         let incoming = JSON.parse(event.data);
+
+        // Handle removal events (sent when someone unfollows / cancels request)
+        if (incoming.action === "remove") {
+          setNotifications((prev) =>
+            prev.filter(
+              (n) => !(n.sender?.id === incoming.sender_id && n.type === incoming.type)
+            )
+          );
+          return;
+        }
+
         if (!Array.isArray(incoming)) {
           incoming = [incoming];
         }
@@ -127,7 +150,12 @@ export function NotificationsProvider({ children }) {
         throw new Error("Failed to clear notifications");
       }
 
-      setNotifications([]);
+      // Keep only unread Invitation_friendships (they're protected server-side)
+      setNotifications((prev) =>
+        prev.filter(
+          (n) => n.type === "Invitation_friendships" && n.state === "unread" && n.receiver_is_private
+        )
+      );
     } catch (err) {
       console.error("Failed to clear notifications:", err);
     }

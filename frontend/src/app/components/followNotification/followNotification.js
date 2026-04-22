@@ -1,25 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { timeAgo } from "../../lib/time";
 import { useNotifications } from "../notifications/NotificationsContext";
 import styles from "./notification.module.css";
-import { Check, X, UserPlus, UserCheck } from "lucide-react";
+import { Check, X, UserPlus } from "lucide-react";
+
+/**
+ * Determines the UI display state from the raw notification data.
+ */
+function getDisplayStatus(request) {
+  if (request.state === "accepted") return "accepted";
+  if (request.state === "reject" || request.state === "rejected") return "rejected";
+  if (request.receiver_is_private) return "pending";
+  return "followed";
+}
 
 export default function FollowRequest({ request }) {
-  const { markNotificationsRead, removeNotifications } = useNotifications();
-  const [status, setStatus] = useState(
-    request.state === "accepted"
-      ? "accepted"
-      : request.receiver_is_private === true
-        ? "pending"
-        : "accepted"
-  );
+  const { markNotificationsRead, removeNotifications, setNotifications } = useNotifications();
+  const [status, setStatus] = useState(() => getDisplayStatus(request));
   const [followBackStatus, setFollowBackStatus] = useState(
     request.is_following_sender ? "following" : "not_following"
   );
   const [followBackLoading, setFollowBackLoading] = useState(false);
-  const hasFollowedBack = followBackStatus === "following";
+
+  // Sync follow back status in real-time when updated from other components
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      // Only process updates from OTHER sources to avoid double-counting or loops
+      if (e.detail && e.detail.followed_id === request.sender.id && e.detail.source !== "notification") {
+        setFollowBackStatus(e.detail.status || "not_following");
+      }
+    };
+    window.addEventListener("followUpdated", handleUpdate);
+    return () => window.removeEventListener("followUpdated", handleUpdate);
+  }, [request.sender.id]);
 
   const handleFollowAction = async (senderId, action) => {
     try {
@@ -30,8 +45,10 @@ export default function FollowRequest({ request }) {
         body: JSON.stringify({ sender_id: senderId, status: action }),
       });
       if (res.ok) {
-        setStatus(action);
-        if (action === "reject") {
+        if (action === "accept") {
+          setStatus("accepted");
+          setNotifications(prev => prev.map(n => n.id === request.id ? { ...n, state: "accepted" } : n));
+        } else if (action === "reject") {
           removeNotifications([request.id]);
         }
       }
@@ -49,10 +66,19 @@ export default function FollowRequest({ request }) {
         body: JSON.stringify({ followed_id: user_id }),
         credentials: "include",
       });
+      const data = await res.json();
       if (res.ok) {
-        setFollowBackStatus("following");
-        await markNotificationsRead([request.id]);
-        window.dispatchEvent(new CustomEvent("followUpdated"));
+        const newStatus = data.status === "pending" ? "pending" : data.status === "accepted" ? "following" : "not_following";
+        setFollowBackStatus(newStatus);
+        
+        // Notify other components about the change
+        window.dispatchEvent(new CustomEvent("followUpdated", { 
+          detail: { followed_id: user_id, status: newStatus, source: "notification" } 
+        }));
+
+        if (newStatus === "following") {
+          await markNotificationsRead([request.id]);
+        }
       }
     } catch (err) {
       console.error("Error following back:", err);
@@ -61,8 +87,25 @@ export default function FollowRequest({ request }) {
     }
   };
 
+  const handleItemClick = () => {
+    if (status !== "pending") {
+      markNotificationsRead([request.id]);
+    }
+  };
+
+  const messageText =
+    status === "pending"
+      ? "wants to follow you"
+      : followBackStatus === "following"
+      ? "is now following you"
+      : "started following you";
+
   return (
-    <div className={styles.notifItem}>
+    <div 
+      className={`${styles.notifItem} ${status !== "pending" ? styles.clickable : ""}`}
+      onClick={handleItemClick}
+      title={status !== "pending" ? "Click to dismiss" : ""}
+    >
       <img
         className={styles.avatar}
         src={request.sender.avatar ? `http://localhost:8080/${request.sender.avatar}` : "/default-avatar.png"}
@@ -73,11 +116,11 @@ export default function FollowRequest({ request }) {
       <div className={styles.content}>
         <div className={styles.textLine}>
           <span className={styles.username}>@{request.sender.username}</span>{" "}
-          {hasFollowedBack ? "followed you back" : "requested to follow you"}
+          {messageText}
         </div>
 
         {status === "pending" && (
-          <div className={styles.actions}>
+          <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
             <button className={`${styles.actionBtn} ${styles.accept}`} onClick={() => handleFollowAction(request.sender.id, "accept")}>
               <Check size={14} /> Accept
             </button>
@@ -87,12 +130,11 @@ export default function FollowRequest({ request }) {
           </div>
         )}
 
-        {status === "accepted" && (
-          <div className={styles.actions}>
-            <span className={styles.statusLabel}>
-              {hasFollowedBack ? "Followed back" : "Accepted"}
-            </span>
-            {!hasFollowedBack && (
+        {(status === "followed" || status === "accepted") && followBackStatus !== "following" && (
+          <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
+            {followBackStatus === "pending" ? (
+              <span className={styles.statusLabel}>Request Sent</span>
+            ) : (
               <button
                 className={styles.followBackBtn}
                 onClick={() => handleFollowBack(request.sender.id)}

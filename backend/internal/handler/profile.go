@@ -1,45 +1,50 @@
 package handler
 
 import (
-	"fmt"
+	"database/sql"
+	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
+
 	key "social-network-backend/internal/repository"
 	get "social-network-backend/internal/set_get_data_base"
-	"encoding/json"
-	"strconv"
-	
 )
 
 func Profile(w http.ResponseWriter, r *http.Request) {
-	// here i will get the context of the user id 
+	// Current logged in user ID from context
 	userid, ok := r.Context().Value(key.UserIDKey).(int)
 	if !ok {
-		 // 
+		// handle appropriately
 	}
-	fmt.Println("The profile it's called ohhh !")
-	url := r.URL
+
 	userIDStr := r.URL.Query().Get("id")
-	fmt.Println("The user id who is come from the front ",userIDStr)
-	fmt.Println("the url who is come ===", url)
     if userIDStr == "" {
         w.WriteHeader(http.StatusBadRequest)
         json.NewEncoder(w).Encode(map[string]string{"message": "Missing user ID"})
         return
     }
-	fmt.Println(userIDStr)
+	
     userID, err := strconv.Atoi(userIDStr)
     if err != nil {
         w.WriteHeader(http.StatusBadRequest)
         json.NewEncoder(w).Encode(map[string]string{"message": "Invalid user ID"})
         return
     }
+
     Data, err := get.GetUserInfo(userID)
     if err != nil {
         w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusInternalServerError)
-        json.NewEncoder(w).Encode(map[string]string{"message": "Internal server error"})
-        return 
+        if errors.Is(err, sql.ErrNoRows) {
+            w.WriteHeader(http.StatusNotFound)
+            json.NewEncoder(w).Encode(map[string]string{"message": "User not found"})
+        } else {
+            w.WriteHeader(http.StatusInternalServerError)
+            json.NewEncoder(w).Encode(map[string]string{"message": "Internal server error"})
+        }
+        return
     }
+
 	followersCount, err := GetFollowersCount(userID)
 	if err != nil {
 		http.Error(w, "Failed to get followers count", http.StatusInternalServerError)
@@ -50,24 +55,32 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get following count", http.StatusInternalServerError)
 		return
 	}
-	// here i will check the state of  
-	Isp ,_ := checkstate(userid, userID) 
 
-	folowthem , err  := IsFollowing(userid, userID)
-	// Here I Will <===>  
+	// Check if current user is following the profile user
+	isFollowing, _ := IsFollowing(userid, userID)
+	
+	// Check if current user has a pending request to follow the profile user
+	isPending, _ := checkstate(userid, userID) 
+
+	// NEW: Check if the profile user is following the current user
+	isFollower, _ := IsFollowing(userID, userid)
+
 	response := struct {
 		User           key.User `json:"user"`
 		FollowersCount int       `json:"followers_count"`
 		FollowingCount int       `json:"following_count"`
-		IsFriend       bool `json:"isfriend"`
-		Ispadding bool `json:"p"`
+		IsFriend       bool      `json:"isfriend"`
+		IsPending      bool      `json:"p"`
+		IsFollower     bool      `json:"is_follower"`
 	}{
 		User:           Data,
 		FollowersCount: followersCount,
 		FollowingCount: followingCount,
-		IsFriend: folowthem,
-		Ispadding: Isp,
+		IsFriend:       isFollowing,
+		IsPending:      isPending,
+		IsFollower:     isFollower,
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -84,6 +97,7 @@ func checkstate(a, b int) (bool, error) {
 	}
 	return count > 0, nil
 }
+
 func GetFollowersCount(userID int) (int, error) {
 	var count int
 	err := key.DB.QueryRow(`
@@ -103,4 +117,3 @@ func GetFollowingCount(userID int) (int, error) {
 	`, userID).Scan(&count)
 	return count, err
 }
-

@@ -34,6 +34,12 @@
   min-width: 0;
 }
 
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .name {
   font-size: 13px;
   font-weight: 700;
@@ -41,6 +47,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.lockIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .fullName {

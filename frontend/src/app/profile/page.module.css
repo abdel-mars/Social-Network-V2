@@ -35,6 +35,68 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Error State */
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 60vh;
+  text-align: center;
+  padding: 24px;
+}
+
+.errorIconWrapper {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: rgba(240, 84, 84, 0.08);
+  border: 1px solid rgba(240, 84, 84, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f05454;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+.errorTitle {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.errorMessage {
+  font-size: 15px;
+  color: var(--text-muted);
+  max-width: 320px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.errorBackBtn {
+  margin-top: 8px;
+  padding: 10px 24px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.errorBackBtn:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* Profile card */
 .profileCard {
   background: var(--surface);

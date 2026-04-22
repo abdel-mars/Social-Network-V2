@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { Lock } from "lucide-react";
 import styles from "./users_seg.module.css";
 import { FollowButton } from "../follow/FollowButton";
 
@@ -39,9 +40,14 @@ export default function UsersList() {
       });
       if (!res.ok) throw new Error("Failed to toggle follow");
       const data = await res.json();
+      
+      const newStatus = data.status === "pending" ? "pending" : data.status === "accepted" ? "following" : "not_following";
+      
       if (data.following || data.status === "pending") {
         setUsers((prev) => prev.filter((u) => u.user_id !== user_id));
-        window.dispatchEvent(new CustomEvent("followUpdated"));
+        window.dispatchEvent(new CustomEvent("followUpdated", { 
+          detail: { followed_id: user_id, status: newStatus } 
+        }));
       }
     } catch (err) {
       console.error("Error toggling follow:", err);
@@ -67,7 +73,10 @@ export default function UsersList() {
                 className={styles.avatar}
               />
               <div className={styles.info}>
-                <span className={styles.name}>{u.username}</span>
+                <div className={styles.nameRow}>
+                  <span className={styles.name}>{u.username}</span>
+                  {u.is_private && <Lock size={12} className={styles.lockIcon} />}
+                </div>
                 <span className={styles.fullName}>{u.full_name || ""}</span>
               </div>
               <FollowButton
