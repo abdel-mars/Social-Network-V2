@@ -266,7 +266,13 @@ export default function ProfilePage() {
           <div className={styles.profileBody}>
             <div className={styles.avatarWrapper}>
               <img
-                src={user.avatar ? `http://localhost:8080/${user.avatar}` : "/default-avatar.png"}
+                src={
+                  user.avatar 
+                    ? `http://localhost:8080/${user.avatar}` 
+                    : user.gender?.toLowerCase() === "female" || user.gender?.toLowerCase() === "women"
+                      ? "/default-female-avatar.svg"
+                      : "/default-male-avatar.svg"
+                }
                 alt={`${user.first_name} ${user.last_name}`}
                 className={styles.avatar}
               />

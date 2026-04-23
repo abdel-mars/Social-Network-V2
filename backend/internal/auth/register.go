@@ -53,7 +53,11 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 		io.Copy(dst, file)
 	} else {
-		avatarPath = ""
+		if strings.ToLower(gender) == "female" || strings.ToLower(gender) == "women" {
+			avatarPath = "uploads/default-female-avatar.svg"
+		} else {
+			avatarPath = "uploads/default-male-avatar.svg"
+		}
 	}
 
 	// === Validation !! ===
