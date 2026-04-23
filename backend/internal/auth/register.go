@@ -82,7 +82,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// <== set new user to database ==>
-	err = dt.AddNewUser(username, email, hash, firstName, lastName, gender, age, nickname, about, avatarPath)
+	err = dt.AddNewUser(username, email, hash, firstName, lastName, gender, age, nickname, about, avatarPath, "")
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			http.Error(w, `{"status":"error","message":"Username or email already used"}`, http.StatusConflict)

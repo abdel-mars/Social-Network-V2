@@ -92,6 +92,7 @@ type User struct {
 	Nickname  *string `json:"nickname,omitempty"`
 	About     *string `json:"about,omitempty"`
 	Avatar    *string `json:"avatar,omitempty"`
+	Cover     *string `json:"cover,omitempty"`
 	CreatedAt string  `json:"created_at"`
 	UpdatedAt string  `json:"updated_at"`
 	IsPrivate *int    `json:"is_private"`

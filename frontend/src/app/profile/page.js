@@ -174,6 +174,7 @@ export default function ProfilePage() {
       about: updatedData.about,
       is_private: updatedData.is_private ? 1 : 0,
       avatar: updatedData.avatar,
+      cover: updatedData.cover,
     }));
     setIsPrivate(updatedData.is_private ? 1 : 0);
   };
@@ -255,7 +256,12 @@ export default function ProfilePage() {
 
       <div className={styles.pageContent}>
         <div className={styles.profileCard}>
-          <div className={styles.cover}></div>
+          <div className={styles.cover}>
+            <img 
+              src={user.cover ? `http://localhost:8080/${user.cover}` : "/cover.jpg"} 
+              alt="Cover" 
+            />
+          </div>
 
           <div className={styles.profileBody}>
             <div className={styles.avatarWrapper}>
