@@ -93,6 +93,15 @@ func Setfollowers(w http.ResponseWriter, r *http.Request) {
 		// Cleanup logic: If we follow someone, remove any stale invitation we might have sent them previously
 		RemoveNotification(userID, req.FollowedID, "Invitation_friendships")
 
+		// NEW: Also remove any notification we received FROM them, BUT ONLY if they are already following us
+		// (This handles clearing the "Follow Back" notification once we actually follow back, 
+		// while preserving "Accept/Reject" buttons if their request is still pending)
+		isOtherFollowingUs, _ := IsFollowing(req.FollowedID, userID)
+		if isOtherFollowingUs {
+			RemoveNotification(req.FollowedID, userID, "Invitation_friendships")
+			notificationgoroutine.SendNotificationRemoval(userID, req.FollowedID, "Invitation_friendships")
+		}
+
 		var message string
 		if isPrivate {
 			message = "wants to follow you"
@@ -223,6 +232,35 @@ func RemoveNotification(senderID, receiverID int, notifType string) {
 	if err != nil {
 		fmt.Println("Error removing notification:", err)
 	}
+}
+
+// UpdateNotificationState updates the state of a notification.
+func UpdateNotificationState(senderID, receiverID int, notifType, newState string) {
+	_, err := repo.DB.Exec(`
+		UPDATE notifications
+		SET state = ?
+		WHERE user_id = ? AND sender_id = ? AND type = ?
+	`, newState, receiverID, senderID, notifType)
+	if err != nil {
+		fmt.Println("Error updating notification state:", err)
+	}
+}
+
+// GetNotificationBySenderReceiverType fetches a specific notification to send via SSE.
+func GetNotificationBySenderReceiverType(senderID, receiverID int, notifType string) (*repo.Notification, error) {
+	var id int
+	err := repo.DB.QueryRow(`
+		SELECT id FROM notifications 
+		WHERE user_id = ? AND sender_id = ? AND type = ?
+		ORDER BY created_at DESC LIMIT 1
+	`, receiverID, senderID, notifType).Scan(&id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return GetNotificationByID(id)
 }
 
 func IsFollowing(followerID, followedID int) (bool, error) {

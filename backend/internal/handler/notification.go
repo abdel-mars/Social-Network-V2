@@ -178,9 +178,15 @@ func ClearNotifications(w http.ResponseWriter, r *http.Request) {
 		  AND state != 'read'
 		  AND NOT (
 		    type = 'Invitation_friendships' 
-		    AND state = 'unread' 
-		    AND EXISTS (
-		        SELECT 1 FROM users WHERE id = notifications.user_id AND is_private = 1
+		    AND (
+		        (state = 'unread' AND EXISTS (SELECT 1 FROM users WHERE id = notifications.user_id AND is_private = 1))
+		        OR 
+		        (state = 'accepted' AND NOT EXISTS (
+		            SELECT 1 FROM followers f 
+		            WHERE f.follower_id = notifications.user_id 
+		              AND f.followed_id = notifications.sender_id 
+		              AND f.status = 'accepted'
+		        ))
 		    )
 		  )
 	`

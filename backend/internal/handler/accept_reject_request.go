@@ -67,10 +67,20 @@ func addaccepstatus(userId, SenderID int, w http.ResponseWriter) {
 		return
 	}
 
-	// Delete the notification from DB
-	// CORRECTED: Sender is SenderID, Receiver is userId
-	RemoveNotification(SenderID, userId, "Invitation_friendships")
-	notificationgoroutine.SendNotificationRemoval(userId, SenderID, "Invitation_friendships")
+	// Check if userId (receiver of request) is already following SenderID
+	isFollowing, _ := IsFollowing(userId, SenderID)
+	if isFollowing {
+		// Just remove it as they are already friends
+		RemoveNotification(SenderID, userId, "Invitation_friendships")
+		notificationgoroutine.SendNotificationRemoval(userId, SenderID, "Invitation_friendships")
+	} else {
+		// Update it to 'accepted' instead of removing, so "Follow Back" shows up
+		UpdateNotificationState(SenderID, userId, "Invitation_friendships", "accepted")
+		notif, err := GetNotificationBySenderReceiverType(SenderID, userId, "Invitation_friendships")
+		if err == nil && notif != nil {
+			notificationgoroutine.SendNotification(*notif)
+		}
+	}
 
 	// Notify the sender that their request was accepted
 	message := "accepted your follow request"
