@@ -28,13 +28,28 @@ export function Renderbar() {
   const { notificationCount } = useNotifications();
 
   const [userId, setUserId] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef(null);
 
   useEffect(() => {
-    const id = localStorage.getItem("userId");
-    setUserId(id);
+    async function checkAuth() {
+      try {
+        const res = await fetch("http://localhost:8080/checkstate", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated) {
+            setUserId(data.user_id);
+            setUserData({ avatar: data.avatar, gender: data.gender });
+            localStorage.setItem("userId", data.user_id);
+          }
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      }
+    }
+    checkAuth();
   }, []);
 
   // Close notif panel on outside click
@@ -167,7 +182,17 @@ export function Renderbar() {
               onClick={() => router.push(`/profile?id=${userId}`)}
               title="My Profile"
             >
-              <User size={16} />
+              {userData?.avatar ? (
+                <img 
+                  src={`http://localhost:8080/${userData.avatar}`} 
+                  alt="Avatar" 
+                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+                />
+              ) : userData?.gender?.toLowerCase() === "female" || userData?.gender?.toLowerCase() === "women" ? (
+                <img src="/default-female-avatar.svg" alt="Avatar" style={{ width: '100%', height: '100%' }} />
+              ) : (
+                <img src="/default-male-avatar.svg" alt="Avatar" style={{ width: '100%', height: '100%' }} />
+              )}
             </button>
 
             {/* Logout */}
@@ -212,7 +237,17 @@ export function Renderbar() {
               className={style.mobileNavBtn}
               onClick={() => { router.push(`/profile?id=${userId}`); setMobileOpen(false); }}
             >
-              <User size={20} />
+              {userData?.avatar ? (
+                <img 
+                  src={`http://localhost:8080/${userData.avatar}`} 
+                  alt="Avatar" 
+                  style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }} 
+                />
+              ) : userData?.gender?.toLowerCase() === "female" || userData?.gender?.toLowerCase() === "women" ? (
+                <img src="/default-female-avatar.svg" alt="Avatar" style={{ width: '20px', height: '20px' }} />
+              ) : (
+                <img src="/default-male-avatar.svg" alt="Avatar" style={{ width: '20px', height: '20px' }} />
+              )}
               Profile
             </button>
             <button className={`${style.mobileNavBtn} ${style.mobileLogout}`} onClick={handleLogout}>

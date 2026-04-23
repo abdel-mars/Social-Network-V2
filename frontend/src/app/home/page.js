@@ -123,12 +123,6 @@ export default function Home() {
         <main className={style.feed}>
           {/* Create post prompt */}
           <div className={style.createPrompt} onClick={() => setIsModalOpen(true)}>
-            <div className={style.promptAvatar}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
             <div className={style.promptText}>What's on your mind?</div>
             <button id="create-post-btn" className={style.promptBtn}>
               <PenSquare size={15} />

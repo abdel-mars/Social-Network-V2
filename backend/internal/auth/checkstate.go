@@ -25,8 +25,20 @@ func CheckState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := Go.GetUserInfo(id)
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"authenticated": true,
+			"user_id":       id,
+		})
+		return
+	}
+
 	json.NewEncoder(w).Encode(map[string]any{
 		"authenticated": true,
 		"user_id":       id,
+		"avatar":        user.Avatar,
+		"gender":        user.Gender,
 	})
 }
