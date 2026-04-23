@@ -78,58 +78,69 @@ export default function ProfilePage() {
       if (e.detail?.source === "profile") return;
 
       const profileId = Number(userId);
+      const isIncoming = e.detail.type === "follower_added" || e.detail.type === "follower_removed";
+      const isOutgoing = !isIncoming;
 
-      // SCENARIO 1: WE (the logged-in user) changed our following status of THIS person
-      if (e.detail && typeof e.detail.followed_id !== "undefined" && e.detail.followed_id === profileId) {
-        const newStatus = e.detail.status;
-        
-        if (typeof e.detail.followers_count === "number") {
-          setFollowersCount(e.detail.followers_count);
-        }
+      const followedId = e.detail.followed_id ? Number(e.detail.followed_id) : null;
+      const followerId = e.detail.follower_id ? Number(e.detail.follower_id) : null;
+      const eventStatus = e.detail.status;
 
-        if (newStatus === "following" || newStatus === "accepted") {
-          if (!Myfriend) { // Only increment if we weren't following before
-            setFriends(true);
-            setIsPending(false);
-            setPad(false);
-            // Only increment locally if we didn't get an authoritative count
-            if (typeof e.detail.followers_count !== "number") {
-              setFollowersCount(prev => prev + 1);
+      // CASE 1: WE followed/unfollowed SOMEONE ELSE
+      if (isOutgoing && followedId) {
+        if (followedId === profileId) {
+          // We changed status with the person whose profile we are viewing
+          if (typeof e.detail.followers_count === "number") setFollowersCount(e.detail.followers_count);
+
+          if (eventStatus === "following" || eventStatus === "accepted") {
+            if (!Myfriend) { 
+              setFriends(true); setIsPending(false); setPad(false);
+              if (typeof e.detail.followers_count !== "number") setFollowersCount(prev => prev + 1);
+            }
+          } else if (eventStatus === "pending") {
+            setFriends(false); setIsPending(true); setPad(true);
+          } else if (eventStatus === "none" || eventStatus === "not_following") {
+            if (Myfriend) { 
+              setFriends(false); setIsPending(false); setPad(false);
+              if (typeof e.detail.followers_count !== "number") setFollowersCount(prev => Math.max(0, prev - 1));
+            } else if (isPending || Pend) {
+              setIsPending(false); setPad(false);
             }
           }
-        } else if (newStatus === "pending") {
-          setFriends(false);
-          setIsPending(true);
-          setPad(true);
-        } else if (newStatus === "none" || newStatus === "not_following") {
-          if (Myfriend) { // Only decrement if we were following before
-            setFriends(false);
-            setIsPending(false);
-            setPad(false);
-            if (typeof e.detail.followers_count !== "number") {
-              setFollowersCount(prev => Math.max(0, prev - 1));
-            }
+        } else if (isOwnProfile) {
+          // We are viewing our OWN profile, and we just followed/unfollowed someone else
+          if (eventStatus === "following" || eventStatus === "accepted") {
+            setFollowingCount(prev => prev + 1);
+          } else if (eventStatus === "none" || eventStatus === "not_following") {
+            setFollowingCount(prev => Math.max(0, prev - 1));
           }
         }
       }
 
-      // SCENARIO 2: This person (follower_id) followed/unfollowed US
-      if (e.detail && typeof e.detail.follower_id !== "undefined" && e.detail.follower_id === profileId) {
-        if (e.detail.type === "follower_removed") {
-          if (isFollower) { // Only decrement if they were a follower
-            setIsFollower(false);
-            if (isOwnProfile) setFollowersCount(prev => Math.max(0, prev - 1));
-            else setFollowingCount(prev => Math.max(0, prev - 1));
-          }
-        } else if (e.detail.type === "follower_added") {
-          if (e.detail.status === "accepted") {
-            if (!isFollower) { // Only increment if they weren't a follower
-              setIsFollower(true);
-              if (isOwnProfile) setFollowersCount(prev => prev + 1);
-              else setFollowingCount(prev => prev + 1);
+      // CASE 2: SOMEONE ELSE followed/unfollowed US
+      if (isIncoming && followerId) {
+        if (followerId === profileId) {
+          // The person whose profile we are viewing just followed/unfollowed us
+          if (e.detail.type === "follower_added") {
+            if (eventStatus === "accepted") {
+              if (!isFollower) { 
+                setIsFollower(true); 
+                setFollowingCount(prev => prev + 1); 
+              }
+            } else {
+              setIsFollower(false);
             }
-          } else {
-            setIsFollower(false);
+          } else if (e.detail.type === "follower_removed") {
+            if (isFollower) { 
+              setIsFollower(false); 
+              setFollowingCount(prev => Math.max(0, prev - 1)); 
+            }
+          }
+        } else if (isOwnProfile) {
+          // We are viewing our OWN profile, and someone followed/unfollowed us
+          if (e.detail.type === "follower_added" && eventStatus === "accepted") {
+            setFollowersCount(prev => prev + 1);
+          } else if (e.detail.type === "follower_removed") {
+            setFollowersCount(prev => Math.max(0, prev - 1));
           }
         }
       }
