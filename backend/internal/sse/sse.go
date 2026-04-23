@@ -18,33 +18,38 @@ type client struct {
 
 var (
 	mu      sync.RWMutex
-	clients = make(map[int]*client)
+	clients = make(map[int]map[*client]struct{})
 )
 
 // Register creates an SSE channel for the given user and stores it.
-// Returns the channel the caller should read from to send events.
-func Register(userID int) chan []byte {
+// Returns the client which the caller should use to read events and unregister later.
+func Register(userID int) *client {
 	mu.Lock()
 	defer mu.Unlock()
 
-	// Close any existing connection for this user (e.g. re-connect)
-	if old, ok := clients[userID]; ok {
-		close(old.ch)
+	if clients[userID] == nil {
+		clients[userID] = make(map[*client]struct{})
 	}
 
 	ch := make(chan []byte, 16)
-	clients[userID] = &client{userID: userID, ch: ch}
-	return ch
+	c := &client{userID: userID, ch: ch}
+	clients[userID][c] = struct{}{}
+	return c
 }
 
-// Unregister removes the SSE client and closes its channel.
-func Unregister(userID int) {
+// Unregister removes the specific SSE client and closes its channel.
+func Unregister(c *client) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if c, ok := clients[userID]; ok {
-		close(c.ch)
-		delete(clients, userID)
+	if userClients, ok := clients[c.userID]; ok {
+		if _, exists := userClients[c]; exists {
+			close(c.ch)
+			delete(userClients, c)
+		}
+		if len(userClients) == 0 {
+			delete(clients, c.userID)
+		}
 	}
 }
 
@@ -52,19 +57,27 @@ func Unregister(userID int) {
 // If the user is not connected, the event is silently dropped.
 func Send(userID int, data []byte) {
 	mu.RLock()
-	c, ok := clients[userID]
-	mu.RUnlock()
-
-	if !ok {
+	userClients, ok := clients[userID]
+	if !ok || len(userClients) == 0 {
+		mu.RUnlock()
 		fmt.Println("[SSE] user not connected:", userID)
 		return
 	}
 
-	select {
-	case c.ch <- data:
-	default:
-		// Channel full — drop to avoid blocking
-		fmt.Println("[SSE] channel full for user:", userID)
+	// Copy the clients to avoid holding the lock during send
+	var activeClients []*client
+	for c := range userClients {
+		activeClients = append(activeClients, c)
+	}
+	mu.RUnlock()
+
+	for _, c := range activeClients {
+		select {
+		case c.ch <- data:
+		default:
+			// Channel full — drop to avoid blocking
+			fmt.Println("[SSE] channel full for user:", userID)
+		}
 	}
 }
 
@@ -101,8 +114,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// Flush immediately to signal the connection is established
 	flusher.Flush()
 
-	ch := Register(userID)
-	defer Unregister(userID)
+	c := Register(userID)
+	defer Unregister(c)
 
 	fmt.Printf("[SSE] user %d connected\n", userID)
 
@@ -119,7 +132,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			// Send a keep-alive comment
 			fmt.Fprintf(w, ": keep-alive\n\n")
 			flusher.Flush()
-		case data, open := <-ch:
+		case data, open := <-c.ch:
 			if !open {
 				return
 			}
