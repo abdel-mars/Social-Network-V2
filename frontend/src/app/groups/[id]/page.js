@@ -7,7 +7,7 @@ import { Renderformpost } from "../../components/createpost/Createpost";
 import { RenderPosts } from "../../components/posts/post";
 import GroupCard from "../../components/groupcard/groupcard";
 import Link from "next/link";
-import { PenSquare, Users, UserPlus, LogOut, Trash2, TriangleAlert, X, MessageSquare, Calendar } from "lucide-react";
+import { PenSquare, Users, UserPlus, LogOut, Trash2, TriangleAlert, X, MessageSquare, Calendar, Settings, ChevronDown } from "lucide-react";
 import styles from "./groupdetail.module.css";
 import InviteFriendsModal from "../../components/inviteFriends/inviteFriends";
 import Toast from "../../components/ui/Toast";
@@ -40,6 +40,8 @@ export default function GroupDetailsPage() {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [visibleMembersCount, setVisibleMembersCount] = useState(5);
+  const [showActions, setShowActions] = useState(false);
 
   const redirectToGroupsWithToast = (message, type = "success") => {
     window.sessionStorage.setItem("groupsToast", JSON.stringify({ message, type }));
@@ -104,6 +106,60 @@ export default function GroupDetailsPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [offset, hasMore, loading, IsMember]);
+
+  const handleMembersScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    if (scrollHeight - scrollTop <= clientHeight + 10) {
+      if (visibleMembersCount < (group?.members?.length || 0)) {
+        setVisibleMembersCount((prev) => prev + 5);
+      }
+    }
+  };
+
+  const handleJoin = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:8080/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ group_id: parseInt(id) }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Update group state locally to reflect the new member status
+        setGroup(prev => ({
+          ...prev,
+          group: {
+            ...prev.group,
+            member_status: data?.state === "member" ? "member" : "requested"
+          }
+        }));
+
+        if (data?.state === "member") {
+          const inviteNotificationIds = notifications
+            .filter(
+              (notification) =>
+                notification.type === "group_invitation" && notification.group_id === parseInt(id)
+            )
+            .map((notification) => notification.id);
+
+          if (inviteNotificationIds.length > 0) {
+            await markNotificationsRead(inviteNotificationIds);
+            removeNotifications(inviteNotificationIds);
+          }
+          redirectToGroupsWithToast("Welcome to the group!", "success");
+        } else {
+          setToast({ message: "Join request sent!", type: "success" });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to join:", err);
+      setToast({ message: "Failed to join group", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLeaveGroup = async () => {
     setActionLoading(true);
@@ -230,6 +286,20 @@ export default function GroupDetailsPage() {
     };
   }, [group, id]);
 
+  // Handle click outside to close actions menu
+  useEffect(() => {
+    if (!showActions) return;
+
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(`.${styles.moreWrapper}`)) {
+        setShowActions(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showActions]);
+
   const handleInviteResponse = async (newState) => {
     setInviteLoading(true);
     try {
@@ -305,75 +375,101 @@ export default function GroupDetailsPage() {
         <div className={styles.mainCol}>
           <div className={styles.groupHeader}>
             <div className={styles.groupHeaderMeta}>
-              <h1 className={styles.groupTitle}>{g.title}</h1>
-              <div className={styles.groupSubhead}>
-                <span className={styles.adminTag}>Admin: {g.admin.username}</span>
+              <div className={styles.titleWrapper}>
+                <h1 className={styles.groupTitle}>{g.title}</h1>
                 <span className={styles.privacyTag}>{g.privacy}</span>
               </div>
+              <div className={styles.groupSubhead}>
+                <span className={styles.adminTag}>
+                  Admin: <Link href={`/profile?id=${g.creator_id}`} className={styles.adminLink}>{g.admin.username}</Link>
+                </span>
+              </div>
+              {g.description && <p className={styles.headerDescription}>{g.description}</p>}
             </div>
             <div className={styles.groupActions}>
-              {IsMember && (
-                <Link
-                  href={`/chat?group_id=${id}`}
-                  className={styles.chatBtn}
-                >
-                  <MessageSquare size={16} />
-                  Group Chat
-                </Link>
-              )}
-              {IsMember && (
-                <button
-                  className={styles.inviteFriendsBtn}
-                  onClick={() => setIsInviteModalOpen(true)}
-                >
-                  <UserPlus size={16} />
-                  Invite Friends
-                </button>
-              )}
-              {IsMember && !isCreator && (
-                <button className={styles.leaveBtn} onClick={() => setConfirmAction("leave")}>
-                  <LogOut size={16} /> Leave Group
-                </button>
-              )}
-              {isCreator && (
-                <button className={styles.deleteBtn} onClick={() => setConfirmAction("delete")}>
-                  <Trash2 size={16} />
-                  Delete Group
-                </button>
+              {!IsMember ? (
+                <div className={styles.nonMemberJoin}>
+                  {g.member_status === "requested" ? (
+                    <button className={styles.joinBtn} disabled>Request Sent</button>
+                  ) : g.member_status === "invited" ? (
+                    <div className={styles.inviteActionsHeader}>
+                      <button className={styles.acceptBtnSmall} disabled={inviteLoading} onClick={() => handleInviteResponse("accept")}>Accept</button>
+                      <button className={styles.rejectBtnSmall} disabled={inviteLoading} onClick={() => handleInviteResponse("reject")}>Decline</button>
+                    </div>
+                  ) : (
+                    <button className={styles.joinBtn} onClick={handleJoin}>Join Group</button>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.moreWrapper}>
+                  <button 
+                    className={`${styles.manageBtn} ${showActions ? styles.manageBtnActive : ""}`} 
+                    onClick={() => setShowActions(!showActions)}
+                    title="Manage Group"
+                  >
+                    <Settings size={20} className={styles.settingsIcon} />
+                  </button>
+                  
+                  <div className={`${styles.actionsMenu} ${showActions ? styles.actionsVisible : ""}`}>
+                    <Link 
+                      href={`/chat?group_id=${id}`} 
+                      className={styles.menuItem}
+                      onClick={() => setShowActions(false)}
+                    >
+                      <MessageSquare size={18} />
+                      <span>Group Chat</span>
+                    </Link>
+
+                    <button 
+                      className={styles.menuItem} 
+                      onClick={() => {
+                        setIsInviteModalOpen(true);
+                        setShowActions(false);
+                      }}
+                    >
+                      <UserPlus size={18} />
+                      <span>Invite Friends</span>
+                    </button>
+
+                    <div className={styles.menuSeparator}></div>
+
+                    {!isCreator ? (
+                      <button 
+                        className={`${styles.menuItem} ${styles.leaveItem}`} 
+                        onClick={() => {
+                          setConfirmAction("leave");
+                          setShowActions(false);
+                        }}
+                      >
+                        <LogOut size={18} />
+                        <span>Leave Group</span>
+                      </button>
+                    ) : (
+                      <button 
+                        className={`${styles.menuItem} ${styles.deleteItem}`} 
+                        onClick={() => {
+                          setConfirmAction("delete");
+                          setShowActions(false);
+                        }}
+                      >
+                        <Trash2 size={18} />
+                        <span>Delete Group</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>
 
-          {g.member_status === "invited" && !IsMember && (
-            <div className={styles.invitePanel}>
-              <p className={styles.inviteText}>
-                You have been invited to join this group. Accept to become a member or decline to ignore the invitation.
-              </p>
-              <div className={styles.inviteActions}>
-                <button className={styles.acceptBtn} disabled={inviteLoading} onClick={() => handleInviteResponse("accept")}>Accept</button>
-                <button className={styles.rejectBtn} disabled={inviteLoading} onClick={() => handleInviteResponse("reject")}>Decline</button>
-              </div>
-            </div>
-          )}
-          {g.member_status === "requested" && !IsMember && (
-            <div className={styles.requestedPanel}>
-              <p className={styles.requestedText}>
-                Your join request has been sent. The group owner will review it shortly.
-              </p>
-            </div>
-          )}
-
           {!IsMember ? (
-            <>
-              <div className={styles.nonMemberAlert}>
-                You must join this group to see its posts.
-              </div>
-              <GroupCard group={groupe_id} Clickable={false} />
-            </>
+            <div className={styles.nonMemberAlert}>
+              You must join this group to see its posts.
+            </div>
           ) : (
             <>
-              {/* Actions row */}
-              <div style={{ display: 'flex', gap: '12px' }}>
+              {/* Actions row - MOBILE ONLY */}
+              <div className={styles.mobilePrompts}>
                 <div style={{ flex: 1 }} className={styles.createPrompt} onClick={() => setIsModalOpen(true)}>
                   <div className={styles.promptText}>Got something to share?</div>
                   <button className={styles.promptBtn}>
@@ -411,23 +507,45 @@ export default function GroupDetailsPage() {
           )}
         </div>
 
-        {/* Side Column - Members */}
+        {/* Side Column - Members & Desktop Prompts */}
         <div className={styles.sideCol}>
-          <h2 className={styles.sideTitle}>
-            <Users size={18} style={{ display: "inline", marginRight: "8px" }} />
-            Members ({members?.length || 0})
-          </h2>
-          <div className={styles.membersList}>
-            {members?.map((m) => (
-              <div key={m.id} className={styles.memberItem}>
-                <div>
-                  <div className={styles.memberName}>{m.first_name} {m.last_name}</div>
-                  <div className={styles.memberUsername}>@{m.username}</div>
+          <div className={styles.sideCard}>
+            <h2 className={styles.sideTitle}>
+              <Users size={18} style={{ display: "inline", marginRight: "8px" }} />
+              Members ({members?.length || 0})
+            </h2>
+            <div className={styles.membersList} onScroll={handleMembersScroll}>
+              {members?.slice(0, visibleMembersCount).map((m) => (
+                <div key={m.id} className={styles.memberItem}>
+                  <div>
+                    <div className={styles.memberName}>{m.first_name} {m.last_name}</div>
+                    <div className={styles.memberUsername}>@{m.username}</div>
+                  </div>
+                  <div className={styles.memberStatus}>{m.status}</div>
                 </div>
-                <div className={styles.memberStatus}>{m.status}</div>
-              </div>
-            ))}
+              ))}
+              {members?.length === 0 && <p className={styles.emptyMembers}>No members yet.</p>}
+            </div>
           </div>
+
+          {IsMember && (
+            <div className={styles.desktopPrompts}>
+              <div className={styles.createPrompt} onClick={() => setIsModalOpen(true)}>
+                <div className={styles.promptText}>Got something to share?</div>
+                <button className={styles.promptBtn}>
+                  <PenSquare size={15} />
+                  Post
+                </button>
+              </div>
+              <div className={styles.createPrompt} onClick={() => setIsEventModalOpen(true)}>
+                <div className={styles.promptText}>Hosting an event?</div>
+                <button className={styles.promptBtn}>
+                  <Calendar size={15} />
+                  Event
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

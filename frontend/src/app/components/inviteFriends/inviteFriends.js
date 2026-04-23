@@ -10,6 +10,7 @@ export default function InviteFriendsModal({ groupId, onClose, onInviteSent }) {
   const [inviting, setInviting] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(5);
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -30,12 +31,29 @@ export default function InviteFriendsModal({ groupId, onClose, onInviteSent }) {
     fetchFriends();
   }, []);
 
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    if (scrollHeight - scrollTop <= clientHeight + 10) {
+      if (visibleCount < filteredFriends.length) {
+        setVisibleCount((prev) => prev + 5);
+      }
+    }
+  };
+
   const toggleFriend = (friendId) => {
     setSelectedFriends((prev) =>
       prev.includes(friendId)
         ? prev.filter((id) => id !== friendId)
         : [...prev, friendId]
     );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedFriends.length === filteredFriends.length) {
+      setSelectedFriends([]);
+    } else {
+      setSelectedFriends(filteredFriends.map(f => f.id));
+    }
   };
 
   const handleInvite = async () => {
@@ -65,7 +83,7 @@ export default function InviteFriendsModal({ groupId, onClose, onInviteSent }) {
   };
 
   const filteredFriends = friends.filter((f) =>
-    `${f.first_name} ${f.last_name} ${f.username}`
+    `${f.full_name} ${f.username}`
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
   );
@@ -82,38 +100,62 @@ export default function InviteFriendsModal({ groupId, onClose, onInviteSent }) {
           </button>
         </div>
 
-        <div className={styles.searchBox}>
-          <input
-            type="text"
-            placeholder="Search friends..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.searchInput}
-          />
+        <div className={styles.searchRow}>
+          <div className={styles.searchBox}>
+            <input
+              type="text"
+              placeholder="Search friends..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setVisibleCount(5);
+              }}
+              className={styles.searchInput}
+            />
+          </div>
+          {filteredFriends.length > 0 && (
+            <button className={styles.selectAllBtn} onClick={toggleSelectAll}>
+              {selectedFriends.length === filteredFriends.length ? "Deselect All" : "Select All"}
+            </button>
+          )}
         </div>
 
-        <div className={styles.friendsList}>
+        <div className={styles.friendsList} onScroll={handleScroll}>
           {loading ? (
             <div className={styles.loadingState}>Loading friends...</div>
           ) : filteredFriends.length === 0 ? (
             <div className={styles.emptyState}>No friends found</div>
           ) : (
-            filteredFriends.map((friend) => (
-              <label key={friend.id} className={styles.friendItem}>
-                <input
-                  type="checkbox"
-                  checked={selectedFriends.includes(friend.id)}
-                  onChange={() => toggleFriend(friend.id)}
-                  className={styles.checkbox}
-                />
-                <div className={styles.friendInfo}>
-                  <div className={styles.friendName}>
-                    {friend.first_name} {friend.last_name}
+            filteredFriends.slice(0, visibleCount).map((friend) => {
+              const isSelected = selectedFriends.includes(friend.id);
+              return (
+                <label key={friend.id} className={`${styles.friendItem} ${isSelected ? styles.selectedItem : ""}`}>
+                  <div className={styles.friendLeft}>
+                    <div className={styles.avatarWrapper}>
+                      {friend.image_path ? (
+                        <img src={`http://localhost:8080/${friend.image_path}`} alt="" className={styles.avatar} />
+                      ) : (
+                        <div className={`${styles.avatarPlaceholder} ${friend.gender?.toLowerCase() === 'female' ? styles.female : ''}`}>
+                          {friend.full_name?.[0] || friend.username?.[0] || "?"}
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.friendInfo}>
+                      <div className={styles.friendName}>
+                        {friend.full_name}
+                      </div>
+                      <div className={styles.friendUsername}>@{friend.username}</div>
+                    </div>
                   </div>
-                  <div className={styles.friendUsername}>@{friend.username}</div>
-                </div>
-              </label>
-            ))
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleFriend(friend.id)}
+                    className={styles.checkbox}
+                  />
+                </label>
+              );
+            })
           )}
         </div>
 

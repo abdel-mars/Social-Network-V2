@@ -1,13 +1,39 @@
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
+.liner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 12px;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+  background: transparent;
+  border-radius: var(--radius-md);
+}
+
+.linerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.infoWrapper {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  box-shadow: var(--shadow-card);
-  transition: all var(--transition);
+}
+
+.linerRight {
+  flex-shrink: 0;
 }
 
 .clickable {
@@ -15,34 +41,20 @@
 }
 
 .clickable:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--accent-light);
-}
-
-/* Header */
-.cardHeader {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  background: var(--accent-bg);
 }
 
 .iconWrapper {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-md);
-  background: var(--accent-bg);
-  border: 2px solid var(--accent-light);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-.headerInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .title {
@@ -69,28 +81,19 @@
 
 /* Body */
 .description {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  flex: 1;
-}
-
-/* Footer */
-.footer {
-  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin: 0;
 }
 
 .joinBtn {
-  width: 100%;
-  padding: 10px;
-  border-radius: var(--radius-md);
+  min-width: 100px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
   background: var(--accent);
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   font-family: 'Nunito', sans-serif;
   border: none;

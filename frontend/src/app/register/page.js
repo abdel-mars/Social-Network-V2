@@ -67,9 +67,9 @@ export default function RegisterPage() {
         <div className={style.cardHeader}>
           <div className={style.logoRing}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15"/>
-              <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35"/>
-              <circle cx="12" cy="12" r="3" fill="currentColor"/>
+              <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
+              <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35" />
+              <circle cx="12" cy="12" r="3" fill="currentColor" />
             </svg>
           </div>
           <h1 className={style.logoTitle}>01Social</h1>
@@ -153,7 +153,7 @@ export default function RegisterPage() {
           <div className={style.field}>
             <label htmlFor="avatar" className={style.fileLabel}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
               </svg>
               {avatar ? avatar.name : "Upload Avatar (optional)"}
             </label>

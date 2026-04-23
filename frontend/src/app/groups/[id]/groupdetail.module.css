@@ -20,7 +20,6 @@
   gap: 20px;
 }
 
-/* Header Banner */
 .groupHeader {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -38,6 +37,7 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  flex: 1;
 }
 
 .groupSubhead {
@@ -51,10 +51,71 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex-wrap: wrap;
   gap: 12px;
   margin-left: auto;
+  flex-shrink: 0;
 }
+
+.nonMemberJoin {
+  display: flex;
+  align-items: center;
+}
+
+.joinBtn {
+  padding: 10px 24px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 4px 12px rgba(91,124,246,0.25);
+}
+
+.joinBtn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+.joinBtn:disabled {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.inviteActionsHeader {
+  display: flex;
+  gap: 8px;
+}
+
+.acceptBtnSmall,
+.rejectBtnSmall {
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.acceptBtnSmall {
+  background: var(--accent);
+  color: white;
+  border: none;
+}
+
+.rejectBtnSmall {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.acceptBtnSmall:hover { background: var(--accent-dark); }
+.rejectBtnSmall:hover { background: var(--surface-3); }
 
 .leaveBtn {
   background: transparent;
@@ -68,16 +129,35 @@
   color: #c62839;
 }
 
+.titleWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .groupTitle {
   font-size: 24px;
   font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin: 0;
 }
 
 .adminTag {
   font-size: 14px;
   color: var(--text-muted);
+}
+
+.adminLink {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.adminLink:hover {
+  color: var(--accent-dark);
+  text-decoration: underline;
 }
 
 .privacyTag {
@@ -92,6 +172,16 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+}
+
+.headerDescription {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 6px 0 0;
+  max-width: 600px;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .nonMemberAlert {
@@ -186,46 +276,142 @@
   cursor: pointer;
 }
 
-.inviteFriendsBtn,
-.chatBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  border: 1.5px solid var(--border);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all var(--transition);
-  text-decoration: none;
+.mobilePrompts {
+  display: none;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.inviteFriendsBtn:hover,
-.chatBtn:hover {
-  background: var(--surface-3);
-  border-color: var(--accent);
+.desktopPrompts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 4px; /* Reduced since the container has gap now */
+}
+
+.moreWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.manageBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.manageBtn:hover,
+.manageBtnActive {
   color: var(--accent);
+  transform: scale(1.1);
+}
+
+.settingsIcon {
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.manageBtn:hover .settingsIcon,
+.manageBtnActive .settingsIcon {
+  transform: rotate(360deg);
+}
+
+.actionsMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 210px;
+  background: var(--surface-70); /* Semi-transparent if available, else surface */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 100;
+  
+  /* Animation */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.96);
+  transform-origin: top right;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.actionsVisible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.menuItem:hover {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.menuItem span {
+  flex: 1;
+}
+
+.menuSeparator {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 8px;
+  opacity: 0.6;
+}
+
+.leaveItem:hover,
+.deleteItem:hover {
+  background: rgba(220, 53, 69, 0.08);
+  color: #f05454;
 }
 
 .leaveBtn,
 .deleteBtn {
-  padding: 10px 15px;
-  border-radius: var(--radius-pill);
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
   font-weight: 700;
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  transition: transform var(--transition), box-shadow var(--transition), background var(--transition), border-color var(--transition), color var(--transition);
+  justify-content: center;
+  transition: all var(--transition);
 }
 
 .leaveBtn:hover,
 .deleteBtn:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .confirmOverlay {
@@ -347,15 +533,19 @@
 
 /* Side Column (Members) */
 .sideCol {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: calc(var(--topbar-height) + 24px);
+}
+
+.sideCard {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: calc(var(--topbar-height) + 24px);
 }
 
 .sideTitle {
@@ -371,6 +561,29 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.membersList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.membersList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.membersList::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.emptyMembers {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .memberItem {
@@ -423,12 +636,19 @@
   .groupHeader {
     flex-direction: column;
     align-items: stretch;
+    position: relative;
+  }
+
+  .groupHeaderMeta {
+    padding-right: 40px;
   }
 
   .groupActions {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: auto;
+    margin: 0;
   }
 
   .sideCol {
@@ -442,5 +662,14 @@
   .confirmSecondary,
   .confirmPrimary {
     width: 100%;
+  }
+
+  .desktopPrompts {
+    display: none;
+  }
+
+  .mobilePrompts {
+    display: flex;
+    flex-direction: column; /* Stack them on small screens too for better space usage */
   }
 }

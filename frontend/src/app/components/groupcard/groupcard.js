@@ -56,25 +56,30 @@ export default function GroupCard({ group, Clickable = true }) {
 
   return (
     <div 
-      className={`${styles.card} ${Clickable ? styles.clickable : ""}`} 
+      className={`${styles.liner} ${Clickable ? styles.clickable : ""}`} 
       onClick={handleCardClick}
     >
-      <div className={styles.cardHeader}>
+      <div className={styles.linerLeft}>
         <div className={styles.iconWrapper}>
           <ShieldCheck size={24} />
         </div>
-        <div className={styles.headerInfo}>
-          <h2 className={styles.title}>{group.name}</h2>
-          <div className={styles.privacyBadge}>
-            {group.privacy === "Private" ? <Lock size={12} /> : <Globe size={12} />}
-            <span>{group.privacy}</span>
+        <div className={styles.infoWrapper}>
+          <div className={styles.headerRow}>
+            <h2 className={styles.title}>{group.name}</h2>
+            <div className={styles.privacyBadge}>
+              {group.privacy === "Private" ? <Lock size={12} /> : <Globe size={12} />}
+              <span>{group.privacy}</span>
+            </div>
           </div>
+          <p className={styles.description}>
+            {group.description?.length > 10 
+              ? `${group.description.substring(0, 10)}...` 
+              : group.description}
+          </p>
         </div>
       </div>
 
-      <p className={styles.description}>{group.description}</p>
-
-      <div className={styles.footer} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.linerRight} onClick={(e) => e.stopPropagation()}>
         {joined ? (
           <button className={`${styles.joinBtn} ${styles.joined}`} disabled>
             Joined

@@ -130,7 +130,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .searchInput:focus, .searchInput.expanded {
     width: 150px;
   }
