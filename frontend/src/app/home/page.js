@@ -20,6 +20,9 @@ export default function Home() {
   const [viewerIds, setViewerIds] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [toast, setToast] = useState(null);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -31,22 +34,36 @@ export default function Home() {
     }
   }, [searchParams, router]);
 
-  useEffect(() => {
-    async function fetchPosts() {
-      try {
-        const res = await fetch("http://localhost:8080/getposts", {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = await res.json();
-          // Ensure unique posts by ID
-          const uniquePosts = Array.from(new Map(data.map(p => [p.id, p])).values());
-          setPosts(uniquePosts);
+  const fetchPosts = async (currentOffset) => {
+    if (loading || (!hasMore && currentOffset !== 0)) return;
+    setLoading(true);
+    // Artificial delay to make scroll feel smoother
+    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const res = await fetch(`http://localhost:8080/getposts?limit=10&offset=${currentOffset}`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.length < 10) {
+          setHasMore(false);
         }
-      } catch (err) {
-        console.error("Failed to fetch posts:", err);
+        setPosts((prev) => {
+          if (currentOffset === 0) return data;
+          const combined = [...prev, ...data];
+          // Ensure unique posts by ID
+          return Array.from(new Map(combined.map(p => [p.id, p])).values());
+        });
+        setOffset(currentOffset + data.length);
       }
+    } catch (err) {
+      console.error("Failed to fetch posts:", err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     async function fetchFollowers() {
       try {
         const res = await fetch("http://localhost:8080/my-followers", {
@@ -60,9 +77,22 @@ export default function Home() {
         console.error("Failed to fetch followers:", err);
       }
     }
-    fetchPosts();
+    fetchPosts(0);
     fetchFollowers();
   }, []);
+
+  // Infinite scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100) {
+        if (hasMore && !loading) {
+          fetchPosts(offset);
+        }
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [offset, hasMore, loading]);
 
   const handleCreatePost = async (e) => {
     e.preventDefault();
@@ -142,6 +172,7 @@ export default function Home() {
               ))
             )}
           </section>
+          {loading && <div className={style.loading}>Loading more posts...</div>}
         </main>
 
         {/* Right panel */}

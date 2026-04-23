@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	get "social-network-backend/internal/repository"
 	key "social-network-backend/internal/repository"
 )
@@ -22,7 +23,20 @@ func Getposts(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    posts, err := getAllPosts(userID)
+    limit := 10
+    if l := r.URL.Query().Get("limit"); l != "" {
+        if val, err := strconv.Atoi(l); err == nil {
+            limit = val
+        }
+    }
+    offset := 0
+    if o := r.URL.Query().Get("offset"); o != "" {
+        if val, err := strconv.Atoi(o); err == nil {
+            offset = val
+        }
+    }
+
+    posts, err := getAllPosts(userID, limit, offset)
     fmt.Print("THIS IS MY POSTS DATAAAA ",posts)
  
     if err != nil {
@@ -38,7 +52,7 @@ func Getposts(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func getAllPosts(userID int) ([]get.Posts, error) {
+func getAllPosts(userID, limit, offset int) ([]get.Posts, error) {
     query := `
         SELECT *
         FROM (
@@ -92,6 +106,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
             WHERE gm.user_id = ? AND gm.status = 'member'
         ) combined_posts
         ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
     `
     // query params:
     // 1: userID (for user_reaction)
@@ -101,7 +116,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
     // 5: userID (for group user_reaction)
     // 6: userID (for gm.user_id = ?)
 
-    rows, err := get.DB.Query(query, userID, userID, userID, userID, userID, userID)
+    rows, err := get.DB.Query(query, userID, userID, userID, userID, userID, userID, limit, offset)
     if err != nil {
         return nil, err
     }

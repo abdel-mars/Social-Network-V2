@@ -22,22 +22,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 40px;
+  padding: 0 20px;
   position: relative;
+  gap: 10px;
 }
 
 .leftSection {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
+  flex-shrink: 0;
 }
 
 .centerSection {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   justify-content: center;
+  flex: 1;
 }
 
 /* Logo */
@@ -279,20 +279,13 @@
 }
 
 /* Responsive */
-@media (max-width: 950px) {
-  .topbarInner {
-    display: flex;
-    justify-content: space-between;
-  }
-  .navPill { display: none; }
-  .centerSection { display: none; }
-}
-
 @media (max-width: 768px) {
   .hamburger { display: flex; }
   .logoutBtn { display: none; }
   .avatarBtn { display: none; }
   .rightControls { gap: 4px; }
+  .navPill { display: none; }
+  .centerSection { display: none; }
 }
 
 @media (max-width: 400px) {

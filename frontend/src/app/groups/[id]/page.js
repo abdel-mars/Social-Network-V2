@@ -37,15 +37,25 @@ export default function GroupDetailsPage() {
   const [toast, setToast] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const redirectToGroupsWithToast = (message, type = "success") => {
     window.sessionStorage.setItem("groupsToast", JSON.stringify({ message, type }));
     router.replace("/groups");
   };
 
-  const fetchGroup = async ({ redirectIfMissing = false } = {}) => {
+  const fetchGroup = async ({ redirectIfMissing = false, currentOffset = 0 } = {}) => {
+    if (loading || (!hasMore && currentOffset !== 0)) return;
+    if (currentOffset !== 0) {
+      setLoading(true);
+      // Artificial delay to make scroll feel smoother
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
     try {
-      const res = await fetch(`http://localhost:8080/Get_Group_By_ID?id=${id}`, {
+      const res = await fetch(`http://localhost:8080/Get_Group_By_ID?id=${id}&limit=10&offset=${currentOffset}`, {
         credentials: "include",
       });
       if (!res.ok) {
@@ -56,17 +66,44 @@ export default function GroupDetailsPage() {
         throw new Error("Failed to fetch group details");
       }
       const data = await res.json();
-      setIsMember(data.group.is_member);
-      setPosts(data.posts || []);
-      setEvents(data.events || []);
-      setInviteState(data.group.member_status);
-      setGroup(data);
-      setGroupe_id(data.group);
+      
+      if (currentOffset === 0) {
+        setIsMember(data.group.is_member);
+        setPosts(data.posts || []);
+        setEvents(data.events || []);
+        setInviteState(data.group.member_status);
+        setGroup(data);
+        setGroupe_id(data.group);
+        setOffset(data.posts?.length || 0);
+        setHasMore((data.posts?.length || 0) === 10);
+      } else {
+        setPosts((prev) => {
+          const combined = [...prev, ...(data.posts || [])];
+          return Array.from(new Map(combined.map(p => [p.id, p])).values());
+        });
+        setOffset(currentOffset + (data.posts?.length || 0));
+        setHasMore((data.posts?.length || 0) === 10);
+      }
     } catch (err) {
       console.error(err);
       setToast({ message: "Failed to load group details.", type: "error" });
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Infinite scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100) {
+        if (hasMore && !loading && IsMember) {
+          fetchGroup({ currentOffset: offset });
+        }
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [offset, hasMore, loading, IsMember]);
 
   const handleLeaveGroup = async () => {
     setActionLoading(true);
@@ -369,6 +406,7 @@ export default function GroupDetailsPage() {
                   ))
                 )}
               </div>
+              {loading && <div className={styles.loading}>Loading more posts...</div>}
             </>
           )}
         </div>

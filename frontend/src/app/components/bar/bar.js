@@ -24,8 +24,9 @@ const NAV_ITEMS = [
 export function Renderbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
-  const { notificationCount } = useNotifications();
+  const { theme, toggleTheme } = useTheme() || { theme: "light", toggleTheme: () => {} };
+  const { notificationCount = 0 } = useNotifications() || {};
+  const { totalUnreadCount = 0 } = useChat() || {};
 
   const [userId, setUserId] = useState(null);
   const [userData, setUserData] = useState(null);
@@ -111,9 +112,7 @@ export function Renderbar() {
           {/* Center nav pill */}
           <div className={style.centerSection}>
           <nav className={style.navPill}>
-            {NAV_ITEMS.map(({ label, path, icon: Icon }) => {
-              const { totalUnreadCount } = useChat();
-              return (
+            {NAV_ITEMS.map(({ label, path, icon: Icon }) => (
                 <button
                   key={path}
                   id={`nav-${label.toLowerCase()}`}
@@ -131,8 +130,7 @@ export function Renderbar() {
                   </div>
                   <span className={style.navLabel}>{label}</span>
                 </button>
-              );
-            })}
+              ))}
           </nav>
           </div>
 
@@ -179,7 +177,11 @@ export function Renderbar() {
             <button
               id="profile-nav-btn"
               className={style.avatarBtn}
-              onClick={() => router.push(`/profile?id=${userId}`)}
+              onClick={() => {
+                const id = userId || localStorage.getItem("userId");
+                if (id) router.push(`/profile?id=${id}`);
+                else router.push("/");
+              }}
               title="My Profile"
             >
               {userData?.avatar ? (
@@ -235,7 +237,12 @@ export function Renderbar() {
             ))}
             <button
               className={style.mobileNavBtn}
-              onClick={() => { router.push(`/profile?id=${userId}`); setMobileOpen(false); }}
+              onClick={() => { 
+                const id = userId || localStorage.getItem("userId");
+                if (id) router.push(`/profile?id=${id}`);
+                else router.push("/");
+                setMobileOpen(false); 
+              }}
             >
               {userData?.avatar ? (
                 <img 

@@ -22,6 +22,19 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	limit := 10
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if val, err := strconv.Atoi(l); err == nil {
+			limit = val
+		}
+	}
+	offset := 0
+	if o := r.URL.Query().Get("offset"); o != "" {
+		if val, err := strconv.Atoi(o); err == nil {
+			offset = val
+		}
+	}
+
 	row := key.DB.QueryRow(`
         SELECT 
             g.id, g.title, g.description, g.creator_id,
@@ -106,7 +119,8 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
             JOIN groups g ON gp.group_id = g.id
             WHERE gp.group_id = ?
             ORDER BY gp.created_at DESC
-        `, userID, groupID)
+            LIMIT ? OFFSET ?
+        `, userID, groupID, limit, offset)
 		if err == nil {
 			defer postsRows.Close()
 			for postsRows.Next() {
