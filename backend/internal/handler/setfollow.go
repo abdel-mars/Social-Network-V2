@@ -16,114 +16,123 @@ type FollowRequest struct {
 type FollowResponse struct {
 	Following      bool   `json:"following"`
 	Status         string `json:"status"`
-	FollowersCount int    `json:"followers_Count"`
-	FollowingCount int    `json:"following_Count"`
+	FollowersCount int    `json:"followers_count"`
+	FollowingCount int    `json:"following_count"`
 }
 
 func Setfollowers(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Setfollowers called")
-	// Here I Will Get The ID Of Current User !!
-	//  tracker
 	userID, ok := r.Context().Value(repo.UserIDKey).(int)
-	// !! <<==|-|==>> !!
 	if !ok {
-		http.Error(w, "Username Not Found In Context", http.StatusUnauthorized)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+
 	var req FollowRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	var status string
-	// Here I Will Check The Curent Status at db if it's pending !
-	ispanding, err := idPnadinstate(userID, req.FollowedID)
-	fmt.Println("=========================================")
-	if err != nil {
-		fmt.Println("howa ")
+
+	if userID == req.FollowedID {
+		http.Error(w, "You cannot follow yourself", http.StatusBadRequest)
+		return
 	}
-	if ispanding {
-		fmt.Println("im at is panding")
-		// here i will remove the padding
-		RemoveFollow(userID, req.FollowedID)
-		RemoveNotification(userID, req.FollowedID, "Invitation_friendships")
-		status = "Howa"
-		// !-! <<==(.)==>> !-!
-		// Copy Of the Users In To In Another Data Set ....
-		// <<=====>>
-		// here i will set
-	}
-	// Check if follower is already following followed
+
 	isFollowing, err := IsFollowing(userID, req.FollowedID)
 	if err != nil {
-		http.Error(w, "error checking follow status", http.StatusInternalServerError)
+		fmt.Println("[Follow] IsFollowing error:", err)
+		http.Error(w, "server error", http.StatusInternalServerError)
 		return
 	}
-	// (===>>|..\'/..|<<===)
+
+	ispanding, err := idPnadinstate(userID, req.FollowedID)
+	if err != nil {
+		fmt.Println("[Follow] idPnadinstate error:", err)
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	isPrivate, err := IsUserPrivate(req.FollowedID)
+	if err != nil {
+		fmt.Println("[Follow] IsUserPrivate error:", err)
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Printf("[Follow] User %d -> %d. Following: %v, Pending: %v, Private: %v\n", userID, req.FollowedID, isFollowing, ispanding, isPrivate)
+
+	var status string
 	if isFollowing {
-		err = RemoveFollow(userID, req.FollowedID)
-		// Her I Will remove the notification from db !
+		RemoveFollow(userID, req.FollowedID)
+		// Receiver: A, Sender: B
 		RemoveNotification(userID, req.FollowedID, "Invitation_friendships")
-	} else if !ispanding {
-		// check if Target user is private
-		isPrivate, err := IsUserPrivate(req.FollowedID)
-		if err != nil {
-			http.Error(w, "error checking privacy", http.StatusInternalServerError)
-			return
-		}
-		status = "accepted"
+		RemoveNotification(userID, req.FollowedID, "follow_accepted")
+		notificationgoroutine.SendNotificationRemoval(req.FollowedID, userID, "Invitation_friendships")
+		notificationgoroutine.SendNotificationRemoval(req.FollowedID, userID, "follow_accepted")
+		status = "none"
+	} else if ispanding {
+		RemoveFollow(userID, req.FollowedID)
+		RemoveNotification(userID, req.FollowedID, "Invitation_friendships")
+		RemoveNotification(userID, req.FollowedID, "follow_accepted")
+		notificationgoroutine.SendNotificationRemoval(req.FollowedID, userID, "Invitation_friendships")
+		notificationgoroutine.SendNotificationRemoval(req.FollowedID, userID, "follow_accepted")
+		status = "none"
+	} else {
 		if isPrivate {
 			status = "pending"
+		} else {
+			status = "accepted"
 		}
-		fmt.Println("Here At Back-End At Status Who Is Set On Table", status)
+
 		err = AddFollow(userID, req.FollowedID, status)
-		// Here when i will send Notification To user
-		// Her I Will send message of the user it's follow u
-		// Check State Of This Request From Status !
-		// State ==> <=pending=> <===> <=accepte=>
-		// << Here I Will store t HE NOTIFICATION IN DATA BASE FOR TRACK THE EVENT
-		// Here I Will Register The <.> !
-		message := fmt.Sprintf("The Request It's Done And It's At State %s", status)
+		if err != nil {
+			http.Error(w, "error adding follow", http.StatusInternalServerError)
+			return
+		}
+
+		// Cleanup logic: If we follow someone, remove any stale invitation we might have sent them previously
+		RemoveNotification(userID, req.FollowedID, "Invitation_friendships")
+
+		// NEW: Also remove any notification we received FROM them, BUT ONLY if they are already following us
+		// (This handles clearing the "Follow Back" notification once we actually follow back, 
+		// while preserving "Accept/Reject" buttons if their request is still pending)
+		isOtherFollowingUs, _ := IsFollowing(req.FollowedID, userID)
+		if isOtherFollowingUs {
+			RemoveNotification(req.FollowedID, userID, "Invitation_friendships")
+			notificationgoroutine.SendNotificationRemoval(userID, req.FollowedID, "Invitation_friendships")
+		}
+
+		var message string
+		if isPrivate {
+			message = "wants to follow you"
+		} else {
+			message = "started following you"
+		}
+
 		Notification_ID, err := AddNotification(userID, req.FollowedID, "Invitation_friendships", message)
 		if err != nil {
-			http.Error(w, "server erro", http.StatusInternalServerError)
-		}
-		// Her I Will Get The Data By Id
-		Notif, err := GetNotificationByID(int(Notification_ID))
-		if err != nil {
-			fmt.Println("Error getting notification by ID:", err)
-		}
-
-		if Notif != nil {
-			fmt.Println("<<<< Sending Real-time Notification >>>>")
-			notificationgoroutine.SendNotification(*Notif)
+			fmt.Println("Error adding notification:", err)
 		} else {
-			fmt.Println("Warning: Notification not found for ID", Notification_ID)
+			Notif, err := GetNotificationByID(int(Notification_ID))
+			if err != nil {
+				fmt.Println("Error getting notification by ID:", err)
+			} else if Notif != nil {
+				notificationgoroutine.SendNotification(*Notif)
+			}
 		}
 	}
 
-	followers_Count, err := GetFollowersCount(req.FollowedID)
-	if err != nil {
-		http.Error(w, "Failed to get followers count", http.StatusInternalServerError)
-		return
-	}
+	followers_Count, _ := GetFollowersCount(req.FollowedID)
+	following_Count, _ := GetFollowingCount(req.FollowedID)
 
-	following_Count, err := GetFollowingCount(req.FollowedID)
-	if err != nil {
-		http.Error(w, "Failed to get following count", http.StatusInternalServerError)
-		return
-	}
-	// <===>> return new status <====>
-	// Her I Will Curent State Of This Users If It's ...!
-	fmt.Println("her from back-end", status)
 	res := FollowResponse{
-		Following:      !isFollowing,
+		Following:      status == "accepted",
 		Status:         status,
 		FollowersCount: followers_Count,
 		FollowingCount: following_Count,
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(res) // <<===>>...!
+	json.NewEncoder(w).Encode(res)
 }
 
 func GetNotificationByID(notificationID int) (*repo.Notification, error) {
@@ -132,7 +141,17 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 			n.id, n.user_id, n.sender_id, n.type, n.message, n.state, n.created_at,
 			s.id, s.username, s.first_name, s.last_name, s.avatar,
 			r.is_private,
-			n.group_id,   -- <<< add this to get the group ID
+			EXISTS(
+				SELECT 1
+				FROM followers f
+				WHERE f.follower_id = n.user_id AND f.followed_id = n.sender_id AND f.status = 'accepted'
+			) AS is_following_sender,
+			EXISTS(
+				SELECT 1
+				FROM followers f
+				WHERE f.follower_id = n.user_id AND f.followed_id = n.sender_id AND f.status = 'pending'
+			) AS is_pending_sender,
+			n.group_id,
 			g.title
 		FROM notifications n
 		JOIN users s ON n.sender_id = s.id
@@ -144,6 +163,10 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 	var n repo.Notification
 	var groupTitle sql.NullString
 	var groupID sql.NullInt64
+	var avatar sql.NullString
+	var firstName sql.NullString
+	var lastName sql.NullString
+	var receiverIsPrivate bool
 
 	err := row.Scan(
 		&n.ID,
@@ -155,11 +178,13 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 		&n.CreatedAt,
 		&n.Sender.ID,
 		&n.Sender.Username,
-		&n.Sender.FirstName,
-		&n.Sender.LastName,
-		&n.Sender.Avatar,
-		&n.ReceiverIsPrivate,
-		&groupID, // Use NullInt64 for potentially null field
+		&firstName,
+		&lastName,
+		&avatar,
+		&receiverIsPrivate,
+		&n.IsFollowingSender,
+		&n.IsPendingSender,
+		&groupID,
 		&groupTitle,
 	)
 	if err != nil {
@@ -169,22 +194,16 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 		return nil, err
 	}
 
-	if groupTitle.Valid {
-		n.GroupTitle = groupTitle.String
-	} else {
-		n.GroupTitle = ""
-	}
-
-	if groupID.Valid {
-		n.GroupID = int(groupID.Int64)
-	} else {
-		n.GroupID = 0
-	}
+	n.Sender.FirstName = firstName.String
+	n.Sender.LastName = lastName.String
+	n.Sender.Avatar = avatar.String
+	n.ReceiverIsPrivate = receiverIsPrivate
+	n.GroupTitle = groupTitle.String
+	n.GroupID = int(groupID.Int64)
 
 	return &n, nil
 }
 
-// ////// <<<=====>>>
 func AddNotification(userID, followedID int, notifType, message string) (int64, error) {
 	result, err := repo.DB.Exec(`
         INSERT INTO notifications (user_id, sender_id, type, message)
@@ -202,15 +221,46 @@ func AddNotification(userID, followedID int, notifType, message string) (int64, 
 	return id, nil
 }
 
-// Remove a notification
-func RemoveNotification(userID, followedID int, notifType string) {
+// RemoveNotification deletes a notification from the database.
+// senderID: the ID of the user who sent the notification.
+// receiverID: the ID of the user who received the notification.
+func RemoveNotification(senderID, receiverID int, notifType string) {
 	_, err := repo.DB.Exec(`
         DELETE FROM notifications
         WHERE user_id = ? AND sender_id = ? AND type = ?
-    `, followedID, userID, notifType)
+    `, receiverID, senderID, notifType)
 	if err != nil {
 		fmt.Println("Error removing notification:", err)
 	}
+}
+
+// UpdateNotificationState updates the state of a notification.
+func UpdateNotificationState(senderID, receiverID int, notifType, newState string) {
+	_, err := repo.DB.Exec(`
+		UPDATE notifications
+		SET state = ?
+		WHERE user_id = ? AND sender_id = ? AND type = ?
+	`, newState, receiverID, senderID, notifType)
+	if err != nil {
+		fmt.Println("Error updating notification state:", err)
+	}
+}
+
+// GetNotificationBySenderReceiverType fetches a specific notification to send via SSE.
+func GetNotificationBySenderReceiverType(senderID, receiverID int, notifType string) (*repo.Notification, error) {
+	var id int
+	err := repo.DB.QueryRow(`
+		SELECT id FROM notifications 
+		WHERE user_id = ? AND sender_id = ? AND type = ?
+		ORDER BY created_at DESC LIMIT 1
+	`, receiverID, senderID, notifType).Scan(&id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return GetNotificationByID(id)
 }
 
 func IsFollowing(followerID, followedID int) (bool, error) {

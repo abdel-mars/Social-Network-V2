@@ -58,13 +58,41 @@ export function NotificationPanel() {
       <div className={styles.list}>
         {!notifications || notifications.length === 0 ? (
           <div className={styles.empty}>
-            <p>All caught up! 🎉</p>
+            <p>All caught up!</p>
           </div>
         ) : (
           notifications.map((n) => {
             if (n.type === "Invitation_friendships") {
               return <FollowRequest key={n.id} request={n} />;
             }
+
+            if (n.type === "follow_accepted") {
+              return (
+                <button
+                  key={n.id}
+                  type="button"
+                  className={styles.infoItem}
+                  onClick={() => handleRead(n.id)}
+                >
+                  <div className={styles.notifItem}>
+                    <img
+                      className={styles.avatar}
+                      src={n.sender?.avatar ? `http://localhost:8080/${n.sender.avatar}` : "/default-avatar.png"}
+                      alt={n.sender?.first_name || "User"}
+                      onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
+                    />
+                    <div className={styles.content}>
+                      <div className={styles.textLine}>
+                        <span className={styles.username}>@{n.sender?.username}</span>{" "}
+                        accepted your follow request
+                      </div>
+                      <span className={styles.readHint}>Tap to dismiss</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            }
+
             if (n.type === "request_join_groub" || n.type === "group_join_request") {
               return <JoinRequest key={n.id} request={n} />;
             }

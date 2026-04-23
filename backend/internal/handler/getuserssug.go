@@ -44,7 +44,7 @@ func getFollowStatus(followerID, followedID int) (bool, bool, error) {
 
 func getallusers(user_id int) ([]repo.Sugg, error) {
 	query := `
-		SELECT id, username, first_name, last_name, avatar
+		SELECT id, username, first_name, last_name, avatar, is_private
 		FROM users
 	`
 
@@ -61,7 +61,7 @@ func getallusers(user_id int) ([]repo.Sugg, error) {
 		var firstName, lastName sql.NullString
 		var imagePath sql.NullString
 
-		err := rows.Scan(&u.UserID, &u.UserName, &firstName, &lastName, &imagePath)
+		err := rows.Scan(&u.UserID, &u.UserName, &firstName, &lastName, &imagePath, &u.IsPrivate)
 		if err != nil {
 			return nil, err
 		}

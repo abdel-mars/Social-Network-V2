@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
 import styles from "./users_seg.module.css";
 import { FollowButton } from "../follow/FollowButton";
 
@@ -41,9 +41,14 @@ export default function UsersList() {
       });
       if (!res.ok) throw new Error("Failed to toggle follow");
       const data = await res.json();
+      
+      const newStatus = data.status === "pending" ? "pending" : data.status === "accepted" ? "following" : "not_following";
+      
       if (data.following || data.status === "pending") {
         setUsers((prev) => prev.filter((u) => u.user_id !== user_id));
-        window.dispatchEvent(new CustomEvent("followUpdated"));
+        window.dispatchEvent(new CustomEvent("followUpdated", { 
+          detail: { followed_id: user_id, status: newStatus, source: "suggestions" } 
+        }));
       }
     } catch (err) {
       console.error("Error toggling follow:", err);
@@ -63,19 +68,17 @@ export default function UsersList() {
           const status = following[u.user_id];
           return (
             <div key={u.user_id} className={styles.userItem}>
-              <div 
-                style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, cursor: "pointer" }}
-                onClick={() => router.push(`/profile?id=${u.user_id}`)}
-              >
-                <img
-                  src={u.image_path ? `http://localhost:8080/${u.image_path}` : "/default-avatar.png"}
-                  alt={u.username}
-                  className={styles.avatar}
-                />
-                <div className={styles.info}>
+              <img
+                src={u.image_path ? `http://localhost:8080/${u.image_path}` : "/default-avatar.png"}
+                alt={u.username}
+                className={styles.avatar}
+              />
+              <div className={styles.info}>
+                <div className={styles.nameRow}>
                   <span className={styles.name}>{u.username}</span>
-                  <span className={styles.fullName}>{u.full_name || ""}</span>
+                  {u.is_private && <Lock size={12} className={styles.lockIcon} />}
                 </div>
+                <span className={styles.fullName}>{u.full_name || ""}</span>
               </div>
               <FollowButton
                 status={status || "not_following"}

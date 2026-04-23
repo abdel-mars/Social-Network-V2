@@ -31,6 +31,7 @@ type Notification struct {
 	} `json:"sender"`
 	ReceiverIsPrivate bool   `json:"receiver_is_private"`
 	IsFollowingSender bool   `json:"is_following_sender"`
+	IsPendingSender   bool   `json:"is_pending_sender"`
 	GroupTitle        string `json:"group_title"`
 	GroupID           int    `json:"group_id"`
 }
@@ -122,11 +123,11 @@ type Posts struct {
 }
 
 type Sugg struct {
-	// format json
 	UserID    int     `json:"user_id"`
 	UserName  string  `json:"username"`
 	FullName  string  `json:"full_name"`
 	ImagePath *string `json:"image_path"`
+	IsPrivate bool    `json:"is_private"`
 }
 
 // ....<=====>....

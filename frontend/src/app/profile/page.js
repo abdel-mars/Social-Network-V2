@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail, Cake, VenusAndMars, Lock, Globe, UserCheck, UserX, Clock } from "lucide-react";
+import { Mail, Cake, VenusAndMars, UserCheck, UserX, Clock, UserX2 } from "lucide-react";
 import { RenderPosts } from "../components/posts/post";
 import { Renderbar } from "../components/bar/bar";
+import { FollowButton } from "../components/follow/FollowButton";
 import styles from "./page.module.css";
 import { useSearchParams } from "next/navigation";
 
@@ -16,12 +17,15 @@ export default function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [posts, setPosts] = useState([]);
   const [Myfriend, setFriends] = useState(false);
+  const [isFollower, setIsFollower] = useState(false); 
   const searchParams = useSearchParams();
   const userId = searchParams.get("id");
   const [loggedInUserId, setloggedInUserId] = useState(null);
   const [isPending, setIsPending] = useState(false);
   const [Pend, setPad] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let id = localStorage.getItem("userId");
@@ -32,24 +36,107 @@ export default function ProfilePage() {
   const canSeePosts = isOwnProfile || Myfriend || (user && user.is_private === 0);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setError("No user ID provided.");
+      return;
+    }
+    setError(null);
+    setUser(null);
     async function fetchProfile() {
       try {
         const res = await fetch(`http://localhost:8080/profile?id=${userId}`, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch user");
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          const msg =
+            res.status === 404
+              ? "User not found."
+              : res.status === 400
+              ? "Invalid user ID."
+              : body.message || "Something went wrong.";
+          setError(msg);
+          return;
+        }
         const data = await res.json();
         setUser(data.user);
         setFriends(data.isfriend);
         setPad(data.p);
+        setIsFollower(data.is_follower);
         setIsPrivate(data.user.is_private);
         setFollowersCount(data.followers_count || 0);
         setFollowingCount(data.following_count || 0);
       } catch (err) {
         console.error(err);
+        setError("Could not load profile. Please try again.");
       }
     }
     fetchProfile();
   }, [userId]);
+
+  // Real-time sync: listen for follow updates from other components
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      if (e.detail?.source === "profile") return;
+
+      const profileId = Number(userId);
+
+      // SCENARIO 1: WE (the logged-in user) changed our following status of THIS person
+      if (e.detail && typeof e.detail.followed_id !== "undefined" && e.detail.followed_id === profileId) {
+        const newStatus = e.detail.status;
+        
+        if (typeof e.detail.followers_count === "number") {
+          setFollowersCount(e.detail.followers_count);
+        }
+
+        if (newStatus === "following" || newStatus === "accepted") {
+          if (!Myfriend) { // Only increment if we weren't following before
+            setFriends(true);
+            setIsPending(false);
+            setPad(false);
+            // Only increment locally if we didn't get an authoritative count
+            if (typeof e.detail.followers_count !== "number") {
+              setFollowersCount(prev => prev + 1);
+            }
+          }
+        } else if (newStatus === "pending") {
+          setFriends(false);
+          setIsPending(true);
+          setPad(true);
+        } else if (newStatus === "none" || newStatus === "not_following") {
+          if (Myfriend) { // Only decrement if we were following before
+            setFriends(false);
+            setIsPending(false);
+            setPad(false);
+            if (typeof e.detail.followers_count !== "number") {
+              setFollowersCount(prev => Math.max(0, prev - 1));
+            }
+          }
+        }
+      }
+
+      // SCENARIO 2: This person (follower_id) followed/unfollowed US
+      if (e.detail && typeof e.detail.follower_id !== "undefined" && e.detail.follower_id === profileId) {
+        if (e.detail.type === "follower_removed") {
+          if (isFollower) { // Only decrement if they were a follower
+            setIsFollower(false);
+            if (isOwnProfile) setFollowersCount(prev => Math.max(0, prev - 1));
+            else setFollowingCount(prev => Math.max(0, prev - 1));
+          }
+        } else if (e.detail.type === "follower_added") {
+          if (e.detail.status === "accepted") {
+            if (!isFollower) { // Only increment if they weren't a follower
+              setIsFollower(true);
+              if (isOwnProfile) setFollowersCount(prev => prev + 1);
+              else setFollowingCount(prev => prev + 1);
+            }
+          } else {
+            setIsFollower(false);
+          }
+        }
+      }
+    };
+    window.addEventListener("followUpdated", handleUpdate);
+    return () => window.removeEventListener("followUpdated", handleUpdate);
+  }, [userId, Myfriend, isOwnProfile, isFollower, isPending, Pend]);
 
   useEffect(() => {
     if (!userId || !user) return;
@@ -82,6 +169,7 @@ export default function ProfilePage() {
 
   const handleFollowToggle = async () => {
     try {
+      setFollowLoading(true);
       const res = await fetch("http://localhost:8080/toggle-follow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,15 +178,55 @@ export default function ProfilePage() {
       });
       if (!res.ok) throw new Error("Failed to toggle follow");
       const data = await res.json();
-      if (data.status === "pending") { setIsPending(true); setFriends(false); }
-      else if (data.status === "accepted") { setIsPending(false); setFriends(true); }
-      else { setIsPending(false); setPad(false); setFriends(false); }
-      setFollowersCount(data.followers_Count || 0);
-      setFollowingCount(data.FollowingCount || 0);
+      
+      const newStatus = data.status === "pending" ? "pending" : data.status === "accepted" ? "accepted" : "none";
+      
+      if (data.status === "pending") { 
+        setIsPending(true); setFriends(false); setPad(true);
+      }
+      else if (data.status === "accepted") { 
+        setIsPending(false); setFriends(true); setPad(false);
+      }
+      else { 
+        setIsPending(false); setPad(false); setFriends(false); 
+      }
+      
+      const updatedFollowers = data.followers_count ?? followersCount;
+      const updatedFollowing = data.following_count ?? followingCount;
+      setFollowersCount(updatedFollowers);
+      setFollowingCount(updatedFollowing);
+      
+      window.dispatchEvent(new CustomEvent("followUpdated", { 
+        detail: { 
+          followed_id: Number(userId), 
+          status: newStatus === "accepted" ? "following" : newStatus, 
+          source: "profile",
+          followers_count: updatedFollowers,
+          following_count: updatedFollowing
+        } 
+      }));
     } catch (err) {
       console.error("Error toggling follow:", err);
+    } finally {
+      setFollowLoading(false);
     }
   };
+
+  if (error) return (
+    <div className={styles.pageRoot}>
+      <Renderbar />
+      <div className={styles.errorState}>
+        <div className={styles.errorIconWrapper}>
+          <UserX2 size={48} strokeWidth={1.5} />
+        </div>
+        <h2 className={styles.errorTitle}>Oops!</h2>
+        <p className={styles.errorMessage}>{error}</p>
+        <button className={styles.errorBackBtn} onClick={() => window.history.back()}>
+          ← Go Back
+        </button>
+      </div>
+    </div>
+  );
 
   if (!user) return (
     <div className={styles.pageRoot}>
@@ -115,11 +243,8 @@ export default function ProfilePage() {
       <Renderbar />
 
       <div className={styles.pageContent}>
-        {/* Profile Card */}
         <div className={styles.profileCard}>
-          {/* Cover */}
-          <div className={styles.cover}>
-          </div>
+          <div className={styles.cover}></div>
 
           <div className={styles.profileBody}>
             <div className={styles.avatarWrapper}>
@@ -149,26 +274,18 @@ export default function ProfilePage() {
                       Edit Profile
                     </button>
                   ) : (
-                    <button
-                      id="follow-toggle-btn"
-                      className={`${styles.followBtn} ${(isPending || Pend) ? styles.pending : Myfriend ? styles.following : ""}`}
-                      onClick={handleFollowToggle}
-                    >
-                      {(isPending || Pend) ? (
-                        <><Clock size={15} /> Pending</>
-                      ) : Myfriend ? (
-                        <><UserX size={15} /> Unfollow</>
-                      ) : (
-                        <><UserCheck size={15} /> Follow</>
-                      )}
-                    </button>
+                    <FollowButton
+                      status={(isPending || Pend) ? "pending" : Myfriend ? "accepted" : "not_following"}
+                      onToggle={handleFollowToggle}
+                      loading={followLoading}
+                      isFollower={isFollower}
+                    />
                   )}
                 </div>
               </div>
 
               {user.about && <p className={styles.about}>{user.about}</p>}
 
-              {/* Stats */}
               <div className={styles.statsRow}>
                 <div className={styles.statItem}>
                   <span className={styles.statNum}>{followersCount}</span>
@@ -181,7 +298,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Details */}
               <div className={styles.detailsRow}>
                 <div className={styles.detailChip}>
                   <Mail size={13} />
@@ -200,7 +316,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Posts */}
         <div className={styles.postsSection}>
           <h2 className={styles.postsHeading}>Posts</h2>
           {posts && posts.length > 0 ? (
