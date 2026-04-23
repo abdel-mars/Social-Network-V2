@@ -80,7 +80,6 @@ export default function ProfilePage() {
       const profileId = Number(userId);
 
       // SCENARIO 1: WE (the logged-in user) changed our following status of THIS person
-      // This is the ONLY place that should change Myfriend / isPending
       if (e.detail && typeof e.detail.followed_id !== "undefined" && e.detail.followed_id === profileId) {
         const newStatus = e.detail.status;
         
@@ -89,41 +88,47 @@ export default function ProfilePage() {
         }
 
         if (newStatus === "following" || newStatus === "accepted") {
-          setFriends(true);
-          setIsPending(false);
-          setPad(false);
-          // Only increment locally if we didn't get an authoritative count
-          if (!Myfriend && typeof e.detail.followers_count !== "number") {
-            setFollowersCount(prev => prev + 1);
+          if (!Myfriend) { // Only increment if we weren't following before
+            setFriends(true);
+            setIsPending(false);
+            setPad(false);
+            // Only increment locally if we didn't get an authoritative count
+            if (typeof e.detail.followers_count !== "number") {
+              setFollowersCount(prev => prev + 1);
+            }
           }
         } else if (newStatus === "pending") {
           setFriends(false);
           setIsPending(true);
           setPad(true);
         } else if (newStatus === "none" || newStatus === "not_following") {
-          if (Myfriend && typeof e.detail.followers_count !== "number") {
-            setFollowersCount(prev => Math.max(0, prev - 1));
+          if (Myfriend) { // Only decrement if we were following before
+            setFriends(false);
+            setIsPending(false);
+            setPad(false);
+            if (typeof e.detail.followers_count !== "number") {
+              setFollowersCount(prev => Math.max(0, prev - 1));
+            }
           }
-          setFriends(false);
-          setIsPending(false);
-          setPad(false);
         }
       }
 
       // SCENARIO 2: This person (follower_id) followed/unfollowed US
-      // This should NEVER touch Myfriend or isPending. It only touches isFollower and count.
       if (e.detail && typeof e.detail.follower_id !== "undefined" && e.detail.follower_id === profileId) {
         if (e.detail.type === "follower_removed") {
-          setIsFollower(false);
-          if (isOwnProfile) setFollowersCount(prev => Math.max(0, prev - 1));
-          else setFollowingCount(prev => Math.max(0, prev - 1));
+          if (isFollower) { // Only decrement if they were a follower
+            setIsFollower(false);
+            if (isOwnProfile) setFollowersCount(prev => Math.max(0, prev - 1));
+            else setFollowingCount(prev => Math.max(0, prev - 1));
+          }
         } else if (e.detail.type === "follower_added") {
           if (e.detail.status === "accepted") {
-            setIsFollower(true);
-            if (isOwnProfile) setFollowersCount(prev => prev + 1);
-            else setFollowingCount(prev => prev + 1);
+            if (!isFollower) { // Only increment if they weren't a follower
+              setIsFollower(true);
+              if (isOwnProfile) setFollowersCount(prev => prev + 1);
+              else setFollowingCount(prev => prev + 1);
+            }
           } else {
-            // It's just a pending request, A is NOT yet a follower of B
             setIsFollower(false);
           }
         }
@@ -131,7 +136,7 @@ export default function ProfilePage() {
     };
     window.addEventListener("followUpdated", handleUpdate);
     return () => window.removeEventListener("followUpdated", handleUpdate);
-  }, [userId, Myfriend, isOwnProfile]);
+  }, [userId, Myfriend, isOwnProfile, isFollower, isPending, Pend]);
 
   useEffect(() => {
     if (!userId || !user) return;
