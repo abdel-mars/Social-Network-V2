@@ -27,7 +27,7 @@ func Notification(w http.ResponseWriter, r *http.Request) {
 func GetUnreadNotifications(userID int) ([]namix.Notification, error) {
 	rows, err := namix.DB.Query(`
 		SELECT 
-			n.id, n.type, n.message, n.state, n.created_at,
+			n.id, n.user_id, n.type, n.message, n.state, n.created_at,
 			u.id, u.username, u.first_name, u.last_name, u.avatar,
 			r.is_private,
 			EXISTS(
@@ -73,6 +73,7 @@ func GetUnreadNotifications(userID int) ([]namix.Notification, error) {
 
 		if err := rows.Scan(
 			&n.ID,
+			&n.UserID,
 			&n.Type,
 			&n.Message,
 			&n.State,

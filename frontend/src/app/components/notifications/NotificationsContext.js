@@ -99,6 +99,7 @@ export function NotificationsProvider({ children }) {
           
           window.dispatchEvent(new CustomEvent("followUpdated", { 
             detail: { 
+              followed_id: Number(window.localStorage.getItem("userId")),
               follower_id: senderIdToRemove, 
               status: "none", 
               source: "sse",
@@ -125,6 +126,7 @@ export function NotificationsProvider({ children }) {
              const isAccepted = notif.message?.includes("started following");
              window.dispatchEvent(new CustomEvent("followUpdated", { 
               detail: { 
+                followed_id: Number(notif.user_id),
                 follower_id: Number(notif.sender?.id), 
                 status: isAccepted ? "accepted" : "pending", 
                 source: "sse",
