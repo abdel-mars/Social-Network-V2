@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import styles from "./users_seg.module.css";
 import { FollowButton } from "../follow/FollowButton";
