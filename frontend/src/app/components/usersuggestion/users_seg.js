@@ -46,7 +46,7 @@ export default function UsersList() {
       if (data.following || data.status === "pending") {
         setUsers((prev) => prev.filter((u) => u.user_id !== user_id));
         window.dispatchEvent(new CustomEvent("followUpdated", { 
-          detail: { followed_id: user_id, status: newStatus } 
+          detail: { followed_id: user_id, status: newStatus, source: "suggestions" } 
         }));
       }
     } catch (err) {

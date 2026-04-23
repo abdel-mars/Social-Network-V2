@@ -35,6 +35,11 @@ func GetUnreadNotifications(userID int) ([]namix.Notification, error) {
 				FROM followers f
 				WHERE f.follower_id = ? AND f.followed_id = n.sender_id AND f.status = 'accepted'
 			) AS is_following_sender,
+			EXISTS(
+				SELECT 1
+				FROM followers f
+				WHERE f.follower_id = ? AND f.followed_id = n.sender_id AND f.status = 'pending'
+			) AS is_pending_sender,
 			g.id, g.title
 		FROM notifications n
 		JOIN users u ON n.sender_id = u.id
@@ -54,7 +59,7 @@ func GetUnreadNotifications(userID int) ([]namix.Notification, error) {
 			)
 		  )
 		ORDER BY n.created_at DESC
-	`, userID, userID, userID)
+	`, userID, userID, userID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +84,7 @@ func GetUnreadNotifications(userID int) ([]namix.Notification, error) {
 			&n.Sender.Avatar,
 			&n.ReceiverIsPrivate,
 			&n.IsFollowingSender,
+			&n.IsPendingSender,
 			&groupID,
 			&groupTitle,
 		); err != nil {

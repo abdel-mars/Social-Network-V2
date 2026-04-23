@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [posts, setPosts] = useState([]);
   const [Myfriend, setFriends] = useState(false);
-  const [isFollower, setIsFollower] = useState(false); // New state
+  const [isFollower, setIsFollower] = useState(false); 
   const searchParams = useSearchParams();
   const userId = searchParams.get("id");
   const [loggedInUserId, setloggedInUserId] = useState(null);
@@ -60,7 +60,7 @@ export default function ProfilePage() {
         setUser(data.user);
         setFriends(data.isfriend);
         setPad(data.p);
-        setIsFollower(data.is_follower); // Store if they follow us
+        setIsFollower(data.is_follower);
         setIsPrivate(data.user.is_private);
         setFollowersCount(data.followers_count || 0);
         setFollowingCount(data.following_count || 0);
@@ -77,28 +77,61 @@ export default function ProfilePage() {
     const handleUpdate = (e) => {
       if (e.detail?.source === "profile") return;
 
-      if (e.detail && e.detail.followed_id === Number(userId)) {
+      const profileId = Number(userId);
+
+      // SCENARIO 1: WE (the logged-in user) changed our following status of THIS person
+      // This is the ONLY place that should change Myfriend / isPending
+      if (e.detail && typeof e.detail.followed_id !== "undefined" && e.detail.followed_id === profileId) {
         const newStatus = e.detail.status;
+        
+        if (typeof e.detail.followers_count === "number") {
+          setFollowersCount(e.detail.followers_count);
+        }
+
         if (newStatus === "following" || newStatus === "accepted") {
           setFriends(true);
           setIsPending(false);
           setPad(false);
-          if (!Myfriend) setFollowersCount(prev => prev + 1);
+          // Only increment locally if we didn't get an authoritative count
+          if (!Myfriend && typeof e.detail.followers_count !== "number") {
+            setFollowersCount(prev => prev + 1);
+          }
         } else if (newStatus === "pending") {
           setFriends(false);
           setIsPending(true);
           setPad(true);
-        } else {
-          if (Myfriend) setFollowersCount(prev => Math.max(0, prev - 1));
+        } else if (newStatus === "none" || newStatus === "not_following") {
+          if (Myfriend && typeof e.detail.followers_count !== "number") {
+            setFollowersCount(prev => Math.max(0, prev - 1));
+          }
           setFriends(false);
           setIsPending(false);
           setPad(false);
         }
       }
+
+      // SCENARIO 2: This person (follower_id) followed/unfollowed US
+      // This should NEVER touch Myfriend or isPending. It only touches isFollower and count.
+      if (e.detail && typeof e.detail.follower_id !== "undefined" && e.detail.follower_id === profileId) {
+        if (e.detail.type === "follower_removed") {
+          setIsFollower(false);
+          if (isOwnProfile) setFollowersCount(prev => Math.max(0, prev - 1));
+          else setFollowingCount(prev => Math.max(0, prev - 1));
+        } else if (e.detail.type === "follower_added") {
+          if (e.detail.status === "accepted") {
+            setIsFollower(true);
+            if (isOwnProfile) setFollowersCount(prev => prev + 1);
+            else setFollowingCount(prev => prev + 1);
+          } else {
+            // It's just a pending request, A is NOT yet a follower of B
+            setIsFollower(false);
+          }
+        }
+      }
     };
     window.addEventListener("followUpdated", handleUpdate);
     return () => window.removeEventListener("followUpdated", handleUpdate);
-  }, [userId, Myfriend]);
+  }, [userId, Myfriend, isOwnProfile]);
 
   useEffect(() => {
     if (!userId || !user) return;
@@ -140,6 +173,7 @@ export default function ProfilePage() {
       });
       if (!res.ok) throw new Error("Failed to toggle follow");
       const data = await res.json();
+      
       const newStatus = data.status === "pending" ? "pending" : data.status === "accepted" ? "accepted" : "none";
       
       if (data.status === "pending") { 
@@ -152,11 +186,19 @@ export default function ProfilePage() {
         setIsPending(false); setPad(false); setFriends(false); 
       }
       
-      setFollowersCount(data.followers_Count || 0);
-      setFollowingCount(data.following_Count || 0);
+      const updatedFollowers = data.followers_count ?? followersCount;
+      const updatedFollowing = data.following_count ?? followingCount;
+      setFollowersCount(updatedFollowers);
+      setFollowingCount(updatedFollowing);
       
       window.dispatchEvent(new CustomEvent("followUpdated", { 
-        detail: { followed_id: Number(userId), status: newStatus === "accepted" ? "following" : newStatus, source: "profile" } 
+        detail: { 
+          followed_id: Number(userId), 
+          status: newStatus === "accepted" ? "following" : newStatus, 
+          source: "profile",
+          followers_count: updatedFollowers,
+          following_count: updatedFollowing
+        } 
       }));
     } catch (err) {
       console.error("Error toggling follow:", err);
@@ -196,11 +238,8 @@ export default function ProfilePage() {
       <Renderbar />
 
       <div className={styles.pageContent}>
-        {/* Profile Card */}
         <div className={styles.profileCard}>
-          {/* Cover */}
-          <div className={styles.cover}>
-          </div>
+          <div className={styles.cover}></div>
 
           <div className={styles.profileBody}>
             <div className={styles.avatarWrapper}>
@@ -242,7 +281,6 @@ export default function ProfilePage() {
 
               {user.about && <p className={styles.about}>{user.about}</p>}
 
-              {/* Stats */}
               <div className={styles.statsRow}>
                 <div className={styles.statItem}>
                   <span className={styles.statNum}>{followersCount}</span>
@@ -255,7 +293,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Details */}
               <div className={styles.detailsRow}>
                 <div className={styles.detailChip}>
                   <Mail size={13} />
@@ -274,7 +311,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Posts */}
         <div className={styles.postsSection}>
           <h2 className={styles.postsHeading}>Posts</h2>
           {posts && posts.length > 0 ? (

@@ -1,0 +1,37 @@
+  const handleFollowToggle = async () => {
+    try {
+      setFollowLoading(true);
+      const res = await fetch("http://localhost:8080/toggle-follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ followed_id: Number(userId) }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to toggle follow");
+      const data = await res.json();
+      console.log("[Follow] Toggle response:", data);
+      
+      const newStatus = data.status === "pending" ? "pending" : data.status === "accepted" ? "accepted" : "none";
+      
+      if (data.status === "pending") { 
+        setIsPending(true); setFriends(false); setPad(true);
+      }
+      else if (data.status === "accepted") { 
+        setIsPending(false); setFriends(true); setPad(false);
+      }
+      else { 
+        setIsPending(false); setPad(false); setFriends(false); 
+      }
+      
+      setFollowersCount(data.followers_count || 0);
+      setFollowingCount(data.following_count || 0);
+      
+      window.dispatchEvent(new CustomEvent("followUpdated", { 
+        detail: { followed_id: Number(userId), status: newStatus === "accepted" ? "following" : newStatus, source: "profile" } 
+      }));
+    } catch (err) {
+      console.error("Error toggling follow:", err);
+    } finally {
+      setFollowLoading(false);
+    }
+  };

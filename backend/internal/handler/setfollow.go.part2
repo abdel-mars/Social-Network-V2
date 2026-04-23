@@ -1,0 +1,8 @@
+func IsUserPrivate(userID int) (bool, error) {
+	var isPrivate bool
+	err := repo.DB.QueryRow(`SELECT is_private FROM users WHERE id = ?`, userID).Scan(&isPrivate)
+	if err != nil {
+		return false, err
+	}
+	return isPrivate, nil
+}

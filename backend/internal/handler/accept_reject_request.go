@@ -42,17 +42,17 @@ func Accept_or_reject(w http.ResponseWriter, r *http.Request){
 		} else if req.Status == "reject" {
 			fmt.Println("User rejected the follow request")
 			// Here I Will Remove This Row On Db .. 
-			// I will remove the 
 			RemoveFollow(req.SenderID, userID)  
-			RemoveNotification(userID, req.SenderID, "Invitation_friendships")
+			
+			// CORRECTED: Sender is req.SenderID, Receiver is userID
+			RemoveNotification(req.SenderID, userID, "Invitation_friendships")
+			notificationgoroutine.SendNotificationRemoval(userID, req.SenderID, "Invitation_friendships")
 		} else {
 			http.Error(w, "Invalid status value", http.StatusBadRequest)
 			return
 		}
-		//os.Exit(0)
 	    w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "It's done"})
-	
 }
 
 func addaccepstatus(userId, SenderID int, w http.ResponseWriter) {
@@ -67,19 +67,13 @@ func addaccepstatus(userId, SenderID int, w http.ResponseWriter) {
 		return
 	}
 
-	// << update notification state !! >> !!
-	_, err = repo.DB.Exec(`
-		UPDATE notifications
-		SET state = 'accepted'
-		WHERE sender_id = ? AND user_id = ? AND type = 'Invitation_friendships'
-	`, SenderID, userId)
-	if err != nil {
-		http.Error(w, "Failed to update notification", http.StatusInternalServerError)
-		return
-	}
+	// Delete the notification from DB
+	// CORRECTED: Sender is SenderID, Receiver is userId
+	RemoveNotification(SenderID, userId, "Invitation_friendships")
+	notificationgoroutine.SendNotificationRemoval(userId, SenderID, "Invitation_friendships")
 
 	// Notify the sender that their request was accepted
-	message := "Your follow request was accepted"
+	message := "accepted your follow request"
 	notifID, err := AddNotification(userId, SenderID, "follow_accepted", message)
 	if err == nil {
 		notif, err := GetNotificationByID(int(notifID))

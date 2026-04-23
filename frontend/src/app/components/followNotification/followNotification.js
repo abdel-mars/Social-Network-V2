@@ -18,18 +18,40 @@ function getDisplayStatus(request) {
 
 export default function FollowRequest({ request }) {
   const { markNotificationsRead, removeNotifications, setNotifications } = useNotifications();
+  
+  // Use a combination of local state (for instant feedback) and prop state (for global sync)
   const [status, setStatus] = useState(() => getDisplayStatus(request));
-  const [followBackStatus, setFollowBackStatus] = useState(
-    request.is_following_sender ? "following" : "not_following"
-  );
+  const [followBackStatus, setFollowBackStatus] = useState(() => {
+    if (request.is_following_sender) return "following";
+    if (request.is_pending_sender) return "pending";
+    return "not_following";
+  });
   const [followBackLoading, setFollowBackLoading] = useState(false);
 
-  // Sync follow back status in real-time when updated from other components
+  // Sync local state when the global notification state (request prop) changes
+  useEffect(() => {
+    setFollowBackStatus(
+      request.is_following_sender ? "following" : 
+      request.is_pending_sender ? "pending" : 
+      "not_following"
+    );
+    setStatus(getDisplayStatus(request));
+  }, [request.is_following_sender, request.is_pending_sender, request.state]);
+
+  // Handle updates from other components while the panel is OPEN
   useEffect(() => {
     const handleUpdate = (e) => {
-      // Only process updates from OTHER sources to avoid double-counting or loops
       if (e.detail && e.detail.followed_id === request.sender.id && e.detail.source !== "notification") {
-        setFollowBackStatus(e.detail.status || "not_following");
+        const newStatus = e.detail.status || "not_following";
+        
+        // Map the event status to our local status
+        if (newStatus === "following" || newStatus === "accepted") {
+          setFollowBackStatus("following");
+        } else if (newStatus === "pending") {
+          setFollowBackStatus("pending");
+        } else {
+          setFollowBackStatus("not_following");
+        }
       }
     };
     window.addEventListener("followUpdated", handleUpdate);
@@ -48,6 +70,15 @@ export default function FollowRequest({ request }) {
         if (action === "accept") {
           setStatus("accepted");
           setNotifications(prev => prev.map(n => n.id === request.id ? { ...n, state: "accepted" } : n));
+          
+          window.dispatchEvent(new CustomEvent("followUpdated", { 
+            detail: { 
+              follower_id: senderId, 
+              status: "accepted", 
+              source: "notification",
+              type: "follower_added"
+            } 
+          }));
         } else if (action === "reject") {
           removeNotifications([request.id]);
         }
@@ -71,14 +102,15 @@ export default function FollowRequest({ request }) {
         const newStatus = data.status === "pending" ? "pending" : data.status === "accepted" ? "following" : "not_following";
         setFollowBackStatus(newStatus);
         
-        // Notify other components about the change
         window.dispatchEvent(new CustomEvent("followUpdated", { 
-          detail: { followed_id: user_id, status: newStatus, source: "notification" } 
+          detail: { 
+            followed_id: user_id, 
+            status: newStatus, 
+            source: "notification",
+            followers_count: data.followers_count,
+            following_count: data.following_count
+          } 
         }));
-
-        if (newStatus === "following") {
-          await markNotificationsRead([request.id]);
-        }
       }
     } catch (err) {
       console.error("Error following back:", err);

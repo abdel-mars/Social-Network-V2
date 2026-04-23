@@ -16,12 +16,11 @@ type FollowRequest struct {
 type FollowResponse struct {
 	Following      bool   `json:"following"`
 	Status         string `json:"status"`
-	FollowersCount int    `json:"followers_Count"`
-	FollowingCount int    `json:"following_Count"`
+	FollowersCount int    `json:"followers_count"`
+	FollowingCount int    `json:"following_count"`
 }
 
 func Setfollowers(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Setfollowers called")
 	userID, ok := r.Context().Value(repo.UserIDKey).(int)
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -41,37 +40,44 @@ func Setfollowers(w http.ResponseWriter, r *http.Request) {
 
 	isFollowing, err := IsFollowing(userID, req.FollowedID)
 	if err != nil {
+		fmt.Println("[Follow] IsFollowing error:", err)
 		http.Error(w, "server error", http.StatusInternalServerError)
 		return
 	}
 
 	ispanding, err := idPnadinstate(userID, req.FollowedID)
 	if err != nil {
+		fmt.Println("[Follow] idPnadinstate error:", err)
 		http.Error(w, "server error", http.StatusInternalServerError)
 		return
 	}
 
 	isPrivate, err := IsUserPrivate(req.FollowedID)
 	if err != nil {
+		fmt.Println("[Follow] IsUserPrivate error:", err)
 		http.Error(w, "server error", http.StatusInternalServerError)
 		return
 	}
 
+	fmt.Printf("[Follow] User %d -> %d. Following: %v, Pending: %v, Private: %v\n", userID, req.FollowedID, isFollowing, ispanding, isPrivate)
+
 	var status string
 	if isFollowing {
-		// Unfollow
 		RemoveFollow(userID, req.FollowedID)
+		// Receiver: A, Sender: B
 		RemoveNotification(userID, req.FollowedID, "Invitation_friendships")
+		RemoveNotification(userID, req.FollowedID, "follow_accepted")
 		notificationgoroutine.SendNotificationRemoval(req.FollowedID, userID, "Invitation_friendships")
+		notificationgoroutine.SendNotificationRemoval(req.FollowedID, userID, "follow_accepted")
 		status = "none"
 	} else if ispanding {
-		// Cancel pending request
 		RemoveFollow(userID, req.FollowedID)
 		RemoveNotification(userID, req.FollowedID, "Invitation_friendships")
+		RemoveNotification(userID, req.FollowedID, "follow_accepted")
 		notificationgoroutine.SendNotificationRemoval(req.FollowedID, userID, "Invitation_friendships")
+		notificationgoroutine.SendNotificationRemoval(req.FollowedID, userID, "follow_accepted")
 		status = "none"
 	} else {
-		// Add new follow or request
 		if isPrivate {
 			status = "pending"
 		} else {
@@ -84,7 +90,7 @@ func Setfollowers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Prevent duplicates
+		// Cleanup logic: If we follow someone, remove any stale invitation we might have sent them previously
 		RemoveNotification(userID, req.FollowedID, "Invitation_friendships")
 
 		var message string
@@ -108,7 +114,7 @@ func Setfollowers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	followers_Count, _ := GetFollowersCount(req.FollowedID)
-	following_Count, _ := GetFollowingCount(userID)
+	following_Count, _ := GetFollowingCount(req.FollowedID)
 
 	res := FollowResponse{
 		Following:      status == "accepted",
@@ -131,6 +137,11 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 				FROM followers f
 				WHERE f.follower_id = n.user_id AND f.followed_id = n.sender_id AND f.status = 'accepted'
 			) AS is_following_sender,
+			EXISTS(
+				SELECT 1
+				FROM followers f
+				WHERE f.follower_id = n.user_id AND f.followed_id = n.sender_id AND f.status = 'pending'
+			) AS is_pending_sender,
 			n.group_id,
 			g.title
 		FROM notifications n
@@ -146,7 +157,7 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 	var avatar sql.NullString
 	var firstName sql.NullString
 	var lastName sql.NullString
-	var receiverIsPrivate int // Scan as int to be safe
+	var receiverIsPrivate bool
 
 	err := row.Scan(
 		&n.ID,
@@ -163,6 +174,7 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 		&avatar,
 		&receiverIsPrivate,
 		&n.IsFollowingSender,
+		&n.IsPendingSender,
 		&groupID,
 		&groupTitle,
 	)
@@ -173,11 +185,10 @@ func GetNotificationByID(notificationID int) (*repo.Notification, error) {
 		return nil, err
 	}
 
-	// Assign nullable fields
 	n.Sender.FirstName = firstName.String
 	n.Sender.LastName = lastName.String
 	n.Sender.Avatar = avatar.String
-	n.ReceiverIsPrivate = receiverIsPrivate == 1
+	n.ReceiverIsPrivate = receiverIsPrivate
 	n.GroupTitle = groupTitle.String
 	n.GroupID = int(groupID.Int64)
 
@@ -201,11 +212,14 @@ func AddNotification(userID, followedID int, notifType, message string) (int64, 
 	return id, nil
 }
 
-func RemoveNotification(userID, followedID int, notifType string) {
+// RemoveNotification deletes a notification from the database.
+// senderID: the ID of the user who sent the notification.
+// receiverID: the ID of the user who received the notification.
+func RemoveNotification(senderID, receiverID int, notifType string) {
 	_, err := repo.DB.Exec(`
         DELETE FROM notifications
         WHERE user_id = ? AND sender_id = ? AND type = ?
-    `, followedID, userID, notifType)
+    `, receiverID, senderID, notifType)
 	if err != nil {
 		fmt.Println("Error removing notification:", err)
 	}
@@ -251,10 +265,10 @@ func RemoveFollow(followerID, followedID int) error {
 }
 
 func IsUserPrivate(userID int) (bool, error) {
-	var isPrivate int
+	var isPrivate bool
 	err := repo.DB.QueryRow(`SELECT is_private FROM users WHERE id = ?`, userID).Scan(&isPrivate)
 	if err != nil {
 		return false, err
 	}
-	return isPrivate == 1, nil
+	return isPrivate, nil
 }

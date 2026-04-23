@@ -9,22 +9,29 @@ function mergeNotifications(current, incoming) {
   const existing = Array.isArray(current) ? current : [];
   const nextItems = Array.isArray(incoming) ? incoming : [incoming];
 
-  // For follow notifications, replace existing ones from the same sender
-  // instead of stacking duplicates
-  let filtered = [...existing];
+  let updated = [...existing];
+  
   for (const item of nextItems) {
-    if (item?.type === "Invitation_friendships" && item?.sender?.id) {
-      filtered = filtered.filter(
-        (n) => !(n.type === "Invitation_friendships" && n.sender?.id === item.sender.id)
+    if (!item?.id) continue;
+
+    // Handle deduplication for follow requests
+    if (item.type === "Invitation_friendships" && item.sender?.id) {
+      updated = updated.filter(
+        (n) => !(n.type === "Invitation_friendships" && n.sender?.id === item.sender.id && n.id !== item.id)
       );
+    }
+
+    const index = updated.findIndex((n) => n.id === item.id);
+    if (index !== -1) {
+      // Update existing item with new data
+      updated[index] = { ...updated[index], ...item };
+    } else {
+      // Add as new item at the beginning
+      updated = [item, ...updated];
     }
   }
 
-  const uniqueItems = nextItems.filter(
-    (item) => item?.id && !filtered.some((notif) => notif.id === item.id)
-  );
-
-  return [...uniqueItems, ...filtered];
+  return updated;
 }
 
 export function NotificationsProvider({ children }) {
@@ -83,17 +90,50 @@ export function NotificationsProvider({ children }) {
 
         // Handle removal events (sent when someone unfollows / cancels request)
         if (incoming.action === "remove") {
+          const senderIdToRemove = Number(incoming.sender_id);
           setNotifications((prev) =>
             prev.filter(
-              (n) => !(n.sender?.id === incoming.sender_id && n.type === incoming.type)
+              (n) => !(Number(n.sender?.id) === senderIdToRemove && n.type === incoming.type)
             )
           );
+          
+          window.dispatchEvent(new CustomEvent("followUpdated", { 
+            detail: { 
+              follower_id: senderIdToRemove, 
+              status: "none", 
+              source: "sse",
+              type: "follower_removed" 
+            } 
+          }));
           return;
         }
 
         if (!Array.isArray(incoming)) {
           incoming = [incoming];
         }
+
+        incoming.forEach(notif => {
+          if (notif.type === "follow_accepted") {
+            window.dispatchEvent(new CustomEvent("followUpdated", { 
+              detail: { 
+                followed_id: Number(notif.sender?.id), 
+                status: "following", 
+                source: "sse",
+              } 
+            }));
+          } else if (notif.type === "Invitation_friendships") {
+             const isAccepted = notif.message?.includes("started following");
+             window.dispatchEvent(new CustomEvent("followUpdated", { 
+              detail: { 
+                follower_id: Number(notif.sender?.id), 
+                status: isAccepted ? "accepted" : "pending", 
+                source: "sse",
+                type: "follower_added"
+              } 
+            }));
+          }
+        });
+
         setNotifications((prev) => mergeNotifications(prev, incoming));
       } catch (err) {
         console.error("Failed to parse notification event:", err);
@@ -101,7 +141,6 @@ export function NotificationsProvider({ children }) {
     };
 
     eventSource.onerror = (err) => {
-      // Don't log error if the connection was closed intentionally or by navigate
       if (eventSource.readyState === EventSource.CLOSED) return;
       console.error("SSE error:", err);
     };
@@ -110,17 +149,20 @@ export function NotificationsProvider({ children }) {
       isMounted = false;
       eventSource.close();
     };
-  }, [userId]); // Only reconnect if the user ID actually changes
+  }, [userId]);
 
   const removeNotifications = (ids) => {
     if (!Array.isArray(ids) || ids.length === 0) return;
-
     setNotifications((prev) => prev.filter((notif) => !ids.includes(notif.id)));
+  };
+
+  const removeNotificationsBySender = (senderId, type = "Invitation_friendships") => {
+    const sId = Number(senderId);
+    setNotifications((prev) => prev.filter((n) => !(Number(n.sender?.id) === sId && n.type === type)));
   };
 
   const markNotificationsRead = async (ids) => {
     if (!Array.isArray(ids) || ids.length === 0) return;
-
     try {
       const res = await fetch("http://localhost:8080/notifications/read", {
         method: "POST",
@@ -128,14 +170,9 @@ export function NotificationsProvider({ children }) {
         credentials: "include",
         body: JSON.stringify({ ids }),
       });
-
-      if (!res.ok) {
-        throw new Error("Failed to mark notifications as read");
-      }
-
-      removeNotifications(ids);
+      if (res.ok) removeNotifications(ids);
     } catch (err) {
-      console.error("Failed to mark notifications as read:", err);
+      console.error(err);
     }
   };
 
@@ -145,21 +182,37 @@ export function NotificationsProvider({ children }) {
         method: "POST",
         credentials: "include",
       });
-
-      if (!res.ok) {
-        throw new Error("Failed to clear notifications");
+      if (res.ok) {
+        setNotifications((prev) =>
+          prev.filter((n) => n.type === "Invitation_friendships" && n.state === "unread" && n.receiver_is_private)
+        );
       }
-
-      // Keep only unread Invitation_friendships (they're protected server-side)
-      setNotifications((prev) =>
-        prev.filter(
-          (n) => n.type === "Invitation_friendships" && n.state === "unread" && n.receiver_is_private
-        )
-      );
     } catch (err) {
-      console.error("Failed to clear notifications:", err);
+      console.error(err);
     }
   };
+
+  // Background listener to keep notification state in sync with follow actions
+  useEffect(() => {
+    const handleFollowUpdate = (e) => {
+      if (!e.detail || !e.detail.followed_id) return;
+      
+      const { followed_id, status } = e.detail;
+      const isNowFollowing = status === "following" || status === "accepted";
+
+      // Sync the "is_following_sender" state without removing the notification
+      setNotifications((prev) => 
+        prev.map(n => {
+          if (n.type === "Invitation_friendships" && n.sender?.id === Number(followed_id)) {
+            return { ...n, is_following_sender: isNowFollowing };
+          }
+          return n;
+        })
+      );
+    };
+    window.addEventListener("followUpdated", handleFollowUpdate);
+    return () => window.removeEventListener("followUpdated", handleFollowUpdate);
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -168,6 +221,7 @@ export function NotificationsProvider({ children }) {
       markNotificationsRead,
       clearAllNotifications,
       removeNotifications,
+      removeNotificationsBySender,
       setNotifications,
     }),
     [notifications]
@@ -182,10 +236,6 @@ export function NotificationsProvider({ children }) {
 
 export function useNotifications() {
   const context = useContext(NotificationsContext);
-
-  if (!context) {
-    throw new Error("useNotifications must be used within a NotificationsProvider");
-  }
-
+  if (!context) throw new Error("useNotifications must be used within a NotificationsProvider");
   return context;
 }
