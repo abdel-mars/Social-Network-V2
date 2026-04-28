@@ -87,7 +87,7 @@ type User struct {
 	Email     string  `json:"email"`
 	FirstName string  `json:"first_name"`
 	LastName  string  `json:"last_name"`
-	Age       *int    `json:"age,omitempty"`
+	DateOfBirth *string `json:"date_of_birth,omitempty"`
 	Gender    *string `json:"gender,omitempty"`
 	Nickname  *string `json:"nickname,omitempty"`
 	About     *string `json:"about,omitempty"`
@@ -118,6 +118,7 @@ type Posts struct {
 	UpdatedAt     string  `json:"updated_at"`
 	LikesCount    int     `json:"likes_count"`
 	DislikesCount int     `json:"dislikes_count"`
+	CommentsCount int     `json:"comments_count"`
 	UserReaction  *string `json:"userReaction"`
 	GroupID       int     `json:"group_id,omitempty"`
 	GroupTitle    string  `json:"group_title,omitempty"`

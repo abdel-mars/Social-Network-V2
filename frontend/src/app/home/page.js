@@ -34,6 +34,40 @@ export default function Home() {
     }
   }, [searchParams, router]);
 
+  const hydrateCommentCounts = async (postsToHydrate) => {
+    const hydratedPosts = await Promise.all(
+      (postsToHydrate || []).map(async (post) => {
+        try {
+          const postType = post.group_id ? "group_post" : "post";
+          const res = await fetch(
+            `http://localhost:8080/posts/${post.id}/comments?post_type=${postType}`,
+            { credentials: "include" }
+          );
+
+          if (!res.ok) {
+            return {
+              ...post,
+              comments_count: typeof post.comments_count === "number" ? post.comments_count : 0,
+            };
+          }
+
+          const comments = await res.json();
+          return {
+            ...post,
+            comments_count: Array.isArray(comments) ? comments.length : 0,
+          };
+        } catch (err) {
+          return {
+            ...post,
+            comments_count: typeof post.comments_count === "number" ? post.comments_count : 0,
+          };
+        }
+      })
+    );
+
+    return hydratedPosts;
+  };
+
   const fetchPosts = async (currentOffset) => {
     if (loading || (!hasMore && currentOffset !== 0)) return;
     setLoading(true);
@@ -45,16 +79,17 @@ export default function Home() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.length < 10) {
+        const hydratedData = await hydrateCommentCounts(Array.isArray(data) ? data : []);
+        if (hydratedData.length < 10) {
           setHasMore(false);
         }
         setPosts((prev) => {
-          if (currentOffset === 0) return data;
-          const combined = [...prev, ...data];
+          if (currentOffset === 0) return hydratedData;
+          const combined = [...prev, ...hydratedData];
           // Ensure unique posts by ID
-          return Array.from(new Map(combined.map(p => [p.id, p])).values());
+          return Array.from(new Map(combined.map(p => [`${p.group_id ? "group" : "post"}_${p.id}`, p])).values());
         });
-        setOffset(currentOffset + data.length);
+        setOffset(currentOffset + hydratedData.length);
       }
     } catch (err) {
       console.error("Failed to fetch posts:", err);

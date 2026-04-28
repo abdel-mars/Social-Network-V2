@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"social-network-backend/internal/helpers"
@@ -30,7 +29,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	gender := r.FormValue("gender")
 	nickname := r.FormValue("nickname")
 	about := r.FormValue("about")
-	age, _ := strconv.Atoi(r.FormValue("age"))
+	dob := r.FormValue("date_of_birth")
 
 	// === Handle Avatar Upload ===
 	file, handler, err := r.FormFile("avatar")
@@ -65,6 +64,10 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"status":"error","message":"Invalid username or name"}`, http.StatusBadRequest)
 		return
 	}
+	if !helpers.ValidDate(dob) {
+		http.Error(w, `{"status":"error","message":"Invalid date of birth"}`, http.StatusBadRequest)
+		return
+	}
 	if !helpers.ValidEmail(email) {
 		http.Error(w, `{"status":"error","message":"Invalid email"}`, http.StatusBadRequest)
 		return
@@ -86,7 +89,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// <== set new user to database ==>
-	err = dt.AddNewUser(username, email, hash, firstName, lastName, gender, age, nickname, about, avatarPath, "")
+	err = dt.AddNewUser(username, email, hash, firstName, lastName, gender, dob, nickname, about, avatarPath, "")
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			http.Error(w, `{"status":"error","message":"Username or email already used"}`, http.StatusConflict)

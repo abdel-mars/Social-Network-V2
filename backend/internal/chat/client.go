@@ -7,7 +7,42 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	repo "social-network-backend/internal/repository"
 )
+
+func canReactToDirectMessage(userID, messageID int) (bool, int, int, error) {
+	var senderID, recipientID int
+	err := repo.DB.QueryRow(`
+		SELECT sender_id, recipient_id
+		FROM messages
+		WHERE id = ?
+	`, messageID).Scan(&senderID, &recipientID)
+	if err != nil {
+		return false, 0, 0, err
+	}
+
+	canReact := userID == senderID || userID == recipientID
+	return canReact, senderID, recipientID, nil
+}
+
+func canReactToGroupMessage(userID, messageID int) (bool, int, error) {
+	var groupID int
+	err := repo.DB.QueryRow(`
+		SELECT group_id
+		FROM group_messages
+		WHERE id = ?
+	`, messageID).Scan(&groupID)
+	if err != nil {
+		return false, 0, err
+	}
+
+	canChat, err := CanGroupChat(userID, groupID)
+	if err != nil {
+		return false, 0, err
+	}
+
+	return canChat, groupID, nil
+}
 
 const (
 	writeWait      = 10 * time.Second
@@ -45,6 +80,90 @@ func (c *Client) ReadPump() {
 		var in IncomingMessage
 		if err := json.Unmarshal(message, &in); err != nil {
 			fmt.Println("[Chat] invalid message format:", err)
+			continue
+		}
+
+		if in.Type == "reaction" {
+			var newCount int
+			var isLiked bool
+
+			if in.GroupID > 0 {
+				canReact, groupID, err := canReactToGroupMessage(c.userID, in.MessageID)
+				if err != nil || !canReact {
+					fmt.Printf("[Chat] User %d blocked from reacting to group message %d\n", c.userID, in.MessageID)
+					continue
+				}
+
+				var exists int
+				err = repo.DB.QueryRow(repo.IS_GROUP_MESSAGE_LIKED, in.MessageID, c.userID).Scan(&exists)
+				if err == nil && exists == 1 {
+					if _, err := repo.DB.Exec(repo.DELETE_GROUP_MESSAGE_REACTION, in.MessageID, c.userID); err != nil {
+						fmt.Printf("[Chat] failed to remove group reaction: %v\n", err)
+						continue
+					}
+					isLiked = false
+				} else {
+					if _, err := repo.DB.Exec(repo.INSERT_GROUP_MESSAGE_REACTION, in.MessageID, c.userID); err != nil {
+						fmt.Printf("[Chat] failed to save group reaction: %v\n", err)
+						continue
+					}
+					isLiked = true
+				}
+
+				if err := repo.DB.QueryRow(repo.GET_GROUP_MESSAGE_REACTION_COUNT, in.MessageID).Scan(&newCount); err != nil {
+					fmt.Printf("[Chat] failed to count group reactions: %v\n", err)
+					continue
+				}
+
+				broadcastData, _ := json.Marshal(map[string]interface{}{
+					"type":       "reaction_update",
+					"message_id": in.MessageID,
+					"group_id":   groupID,
+					"like_count": newCount,
+					"reactor_id": c.userID,
+					"is_liked":   isLiked,
+				})
+				c.hub.BroadcastToGroup(groupID, broadcastData)
+			} else {
+				canReact, senderID, recipientID, err := canReactToDirectMessage(c.userID, in.MessageID)
+				if err != nil || !canReact {
+					fmt.Printf("[Chat] User %d blocked from reacting to direct message %d\n", c.userID, in.MessageID)
+					continue
+				}
+
+				var exists int
+				err = repo.DB.QueryRow(repo.IS_MESSAGE_LIKED, in.MessageID, c.userID).Scan(&exists)
+				if err == nil && exists == 1 {
+					if _, err := repo.DB.Exec(repo.DELETE_MESSAGE_REACTION, in.MessageID, c.userID); err != nil {
+						fmt.Printf("[Chat] failed to remove reaction: %v\n", err)
+						continue
+					}
+					isLiked = false
+				} else {
+					if _, err := repo.DB.Exec(repo.INSERT_MESSAGE_REACTION, in.MessageID, c.userID); err != nil {
+						fmt.Printf("[Chat] failed to save reaction: %v\n", err)
+						continue
+					}
+					isLiked = true
+				}
+
+				if err := repo.DB.QueryRow(repo.GET_MESSAGE_REACTION_COUNT, in.MessageID).Scan(&newCount); err != nil {
+					fmt.Printf("[Chat] failed to count reactions: %v\n", err)
+					continue
+				}
+
+				broadcastData, _ := json.Marshal(map[string]interface{}{
+					"type":         "reaction_update",
+					"message_id":   in.MessageID,
+					"like_count":   newCount,
+					"reactor_id":   c.userID,
+					"is_liked":     isLiked,
+					"recipient_id": recipientID,
+				})
+
+				c.hub.BroadcastToUser(senderID, broadcastData)
+				c.hub.BroadcastToUser(recipientID, broadcastData)
+			}
 			continue
 		}
 

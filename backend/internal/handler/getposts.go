@@ -70,6 +70,7 @@ func getAllPosts(userID, limit, offset int) ([]get.Posts, error) {
                 p.updated_at,
                 (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='like') AS likes_count,
                 (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='dislike') AS dislikes_count,
+                (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comments_count,
                 (SELECT reaction_type FROM reactions r WHERE r.post_id = p.id AND r.user_id = ?) AS user_reaction,
                 NULL AS group_id,
                 NULL AS group_title
@@ -96,6 +97,7 @@ func getAllPosts(userID, limit, offset int) ([]get.Posts, error) {
                 gp.created_at AS updated_at,
                 (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type='like') AS likes_count,
                 (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type='dislike') AS dislikes_count,
+                (SELECT COUNT(*) FROM group_post_comments gpc WHERE gpc.group_post_id = gp.id) AS comments_count,
                 (SELECT reaction_type FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.user_id = ?) AS user_reaction,
                 gp.group_id,
                 g.title AS group_title
@@ -131,7 +133,7 @@ func getAllPosts(userID, limit, offset int) ([]get.Posts, error) {
         if err := rows.Scan(
             &p.ID, &p.UserID, &p.UserName, &p.FullName, &p.Avatar,
             &p.Title, &p.Content, &p.Privacy, &p.ImagePath, &p.CreatedAt, &p.UpdatedAt,
-            &p.LikesCount, &p.DislikesCount, &userReaction, &groupID, &groupTitle,
+            &p.LikesCount, &p.DislikesCount, &p.CommentsCount, &userReaction, &groupID, &groupTitle,
         ); err != nil {
             return nil, err
         }

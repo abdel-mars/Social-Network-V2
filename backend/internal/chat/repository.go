@@ -2,7 +2,6 @@ package chat
 
 import (
 	"database/sql"
-	"fmt"
 	repo "social-network-backend/internal/repository"
 )
 
@@ -23,11 +22,12 @@ func SaveMessage(senderID, recipientID int, content string) (Message, error) {
 	m.RecipientID = recipientID
 	m.Content = content
 
-	// Fetch sender info for the broadcast
+	// Fetch timestamp from DB
 	err = repo.DB.QueryRow(`
-		SELECT username, avatar, created_at FROM messages WHERE id = ?
-	`, m.ID).Scan(&m.SentAt) // We just need the timestamp from DB
+		SELECT sent_at FROM messages WHERE id = ?
+	`, m.ID).Scan(&m.SentAt)
 
+	// Fetch sender info
 	err = repo.DB.QueryRow(`
 		SELECT username, avatar FROM users WHERE id = ?
 	`, senderID).Scan(&m.Sender.Username, &m.Sender.Avatar)
@@ -37,14 +37,16 @@ func SaveMessage(senderID, recipientID int, content string) (Message, error) {
 
 func GetHistory(userA, userB int, limit, offset int) ([]Message, error) {
 	rows, err := repo.DB.Query(`
-		SELECT m.id, m.sender_id, m.recipient_id, m.content, m.sent_at, m.is_read, u.username, u.avatar
+		SELECT m.id, m.sender_id, m.recipient_id, m.content, m.sent_at, m.is_read, u.username, u.avatar,
+		       (SELECT COUNT(*) FROM message_reactions WHERE message_id = m.id) as like_count,
+		       EXISTS(SELECT 1 FROM message_reactions WHERE message_id = m.id AND user_id = ?) as user_liked
 		FROM messages m
 		JOIN users u ON m.sender_id = u.id
 		WHERE (m.sender_id = ? AND m.recipient_id = ?)
 		   OR (m.sender_id = ? AND m.recipient_id = ?)
 		ORDER BY m.sent_at DESC
 		LIMIT ? OFFSET ?
-	`, userA, userB, userB, userA, limit, offset)
+	`, userA, userA, userB, userB, userA, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -53,16 +55,15 @@ func GetHistory(userA, userB int, limit, offset int) ([]Message, error) {
 	var messages []Message
 	for rows.Next() {
 		var m Message
-		if err := rows.Scan(&m.ID, &m.SenderID, &m.RecipientID, &m.Content, &m.SentAt, &m.IsRead, &m.Sender.Username, &m.Sender.Avatar); err != nil {
+		if err := rows.Scan(&m.ID, &m.SenderID, &m.RecipientID, &m.Content, &m.SentAt, &m.IsRead, &m.Sender.Username, &m.Sender.Avatar, &m.LikeCount, &m.UserLiked); err != nil {
 			return nil, err
 		}
-		messages = append([]Message{m}, messages...) // Prepend to keep chronological order
+		messages = append([]Message{m}, messages...)
 	}
 	return messages, nil
 }
 
 func CanChat(senderID, recipientID int) (bool, error) {
-	// Logic: at least one of the users must be following the other.
 	var count int
 	err := repo.DB.QueryRow(`
 		SELECT COUNT(*) FROM followers 
@@ -78,8 +79,6 @@ func CanChat(senderID, recipientID int) (bool, error) {
 }
 
 func GetConversations(userID int) ([]ConversationPreview, error) {
-	// Find all unique friends (A follows B or B follows A)
-	// and join with the last message if it exists.
 	rows, err := repo.DB.Query(`
 		SELECT 
 			u.id, 0 as group_id, u.username, u.avatar, 
@@ -140,17 +139,11 @@ func GetConversations(userID int) ([]ConversationPreview, error) {
 }
 
 func MarkAsRead(recipientID, senderID int) error {
-	result, err := repo.DB.Exec(`
+	_, err := repo.DB.Exec(`
 		UPDATE messages 
 		SET is_read = 1 
 		WHERE recipient_id = ? AND sender_id = ? AND is_read = 0
 	`, recipientID, senderID)
-	if err == nil {
-		rows, _ := result.RowsAffected()
-		if rows > 0 {
-			fmt.Printf("[Chat] MarkAsRead: Marked %d messages as read for sender %d by recipient %d\n", rows, senderID, recipientID)
-		}
-	}
 	return err
 }
 
@@ -171,28 +164,35 @@ func SaveGroupMessage(groupID, senderID int, content string) (Message, error) {
 	m.GroupID = groupID
 	m.Content = content
 
-	// Fetch timestamp
 	err = repo.DB.QueryRow(`
 		SELECT sent_at FROM group_messages WHERE id = ?
 	`, m.ID).Scan(&m.SentAt)
 
-	// Fetch sender info
 	err = repo.DB.QueryRow(`
 		SELECT username, avatar FROM users WHERE id = ?
 	`, senderID).Scan(&m.Sender.Username, &m.Sender.Avatar)
+	if err != nil {
+		return m, err
+	}
+
+	err = repo.DB.QueryRow(`
+		SELECT title FROM groups WHERE id = ?
+	`, groupID).Scan(&m.GroupTitle)
 
 	return m, err
 }
 
-func GetGroupHistory(groupID int, limit, offset int) ([]Message, error) {
+func GetGroupHistory(groupID int, viewerID int, limit, offset int) ([]Message, error) {
 	rows, err := repo.DB.Query(`
-		SELECT m.id, m.sender_id, m.group_id, m.content, m.sent_at, u.username, u.avatar
+		SELECT m.id, m.sender_id, m.group_id, m.content, m.sent_at, u.username, u.avatar,
+		       (SELECT COUNT(*) FROM group_message_reactions WHERE group_message_id = m.id) as like_count,
+		       EXISTS(SELECT 1 FROM group_message_reactions WHERE group_message_id = m.id AND user_id = ?) as user_liked
 		FROM group_messages m
 		JOIN users u ON m.sender_id = u.id
 		WHERE m.group_id = ?
 		ORDER BY m.sent_at DESC
 		LIMIT ? OFFSET ?
-	`, groupID, limit, offset)
+	`, viewerID, groupID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func GetGroupHistory(groupID int, limit, offset int) ([]Message, error) {
 	var messages []Message
 	for rows.Next() {
 		var m Message
-		if err := rows.Scan(&m.ID, &m.SenderID, &m.GroupID, &m.Content, &m.SentAt, &m.Sender.Username, &m.Sender.Avatar); err != nil {
+		if err := rows.Scan(&m.ID, &m.SenderID, &m.GroupID, &m.Content, &m.SentAt, &m.Sender.Username, &m.Sender.Avatar, &m.LikeCount, &m.UserLiked); err != nil {
 			return nil, err
 		}
 		m.Type = "group_chat"
@@ -245,7 +245,6 @@ func CanGroupChat(userID, groupID int) (bool, error) {
 }
 
 func UpdateGroupLastSeen(groupID, userID int) error {
-	// Get the latest message ID for this group
 	var lastMsgID int
 	err := repo.DB.QueryRow(`SELECT COALESCE(MAX(id), 0) FROM group_messages WHERE group_id = ?`, groupID).Scan(&lastMsgID)
 	if err != nil {

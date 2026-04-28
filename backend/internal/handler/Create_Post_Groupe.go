@@ -111,6 +111,7 @@ func GetAd_post(id int) (*key.Posts, error) {
                gp.group_id, g.title,
                (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'like') AS likes_count,
                (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'dislike') AS dislikes_count,
+               (SELECT COUNT(*) FROM group_post_comments gpc WHERE gpc.group_post_id = gp.id) AS comments_count,
                NULL AS user_reaction
         FROM group_posts gp
         JOIN users u ON gp.creator_id = u.id
@@ -122,7 +123,7 @@ func GetAd_post(id int) (*key.Posts, error) {
 	var userReaction sql.NullString
 	err := row.Scan(&post.ID, &post.UserID, &post.UserName, &post.FullName,
 		&post.Avatar, &post.Title, &post.Content, &post.ImagePath, &post.CreatedAt, &post.UpdatedAt,
-		&post.GroupID, &post.GroupTitle, &post.LikesCount, &post.DislikesCount, &userReaction)
+		&post.GroupID, &post.GroupTitle, &post.LikesCount, &post.DislikesCount, &post.CommentsCount, &userReaction)
 	if err != nil {
 		return nil, err
 	}

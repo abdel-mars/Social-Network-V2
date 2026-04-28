@@ -14,7 +14,7 @@ export default function RegisterPage() {
     password: "",
     confirmpassword: "",
     gender: "",
-    age: "",
+    date_of_birth: "",
     nickname: "",
     about: "",
   });
@@ -101,9 +101,31 @@ export default function RegisterPage() {
                 placeholder="username" onChange={handleChange} required />
             </div>
             <div className={style.field}>
-              <label htmlFor="gender" className={style.label}>Gender</label>
-              <input id="gender" className={style.input} type="text" name="gender"
-                placeholder="e.g. Male" onChange={handleChange} />
+              <label className={style.label}>Gender</label>
+              <div className={style.genderToggle}>
+                <button
+                  type="button"
+                  className={`${style.genderBtn} ${form.gender === "Male" ? style.genderBtnActive : ""}`}
+                  onClick={() => setForm({ ...form, gender: "Male" })}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="10" cy="14" r="5" />
+                    <path d="M14 10l5-5M15 5h4v4" />
+                  </svg>
+                  Male
+                </button>
+                <button
+                  type="button"
+                  className={`${style.genderBtn} ${form.gender === "Female" ? style.genderBtnActive : ""}`}
+                  onClick={() => setForm({ ...form, gender: "Female" })}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="9" r="6" />
+                    <path d="M12 15v7M9 19h6" />
+                  </svg>
+                  Female
+                </button>
+              </div>
             </div>
           </div>
 
@@ -128,7 +150,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Nickname + Age */}
+          {/* Nickname + Date of Birth */}
           <div className={style.row}>
             <div className={style.field}>
               <label htmlFor="nickname" className={style.label}>Nickname <span className={style.optional}>(optional)</span></label>
@@ -136,9 +158,16 @@ export default function RegisterPage() {
                 placeholder="Nickname" onChange={handleChange} />
             </div>
             <div className={style.field}>
-              <label htmlFor="age" className={style.label}>Age</label>
-              <input id="age" className={style.input} type="number" name="age"
-                placeholder="Age" onChange={handleChange} required />
+              <label htmlFor="date_of_birth" className={style.label}>Date of Birth</label>
+              <input 
+                id="date_of_birth" 
+                className={style.input} 
+                type="date" 
+                name="date_of_birth"
+                max={new Date().toISOString().split("T")[0]}
+                onChange={handleChange} 
+                required 
+              />
             </div>
           </div>
 

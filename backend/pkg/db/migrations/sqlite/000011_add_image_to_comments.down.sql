@@ -1,0 +1,5 @@
+-- SQLite doesn't support easy column removal in older versions, 
+-- but we can leave it or recreate the table if strictly necessary.
+-- For a simple project, we can just note that it was added.
+-- A proper down migration would involve creating a new table without the column and copying data.
+-- Since this is a new feature, we'll keep it simple.

@@ -63,7 +63,7 @@ func GetUserHashByUsername(username string) (int, string, error) {
 func GetUserInfo(userId int) (repo.User, error) {
 	var user repo.User
 
-	var age sql.NullInt64
+	var dob sql.NullString
 	var gender sql.NullString
 	var nickname sql.NullString
 	var about sql.NullString
@@ -77,7 +77,7 @@ func GetUserInfo(userId int) (repo.User, error) {
 		&user.Email,
 		&user.FirstName,
 		&user.LastName,
-		&age,
+		&dob,
 		&gender,
 		&nickname,
 		&about,
@@ -92,9 +92,8 @@ func GetUserInfo(userId int) (repo.User, error) {
 		return user, err
 	}
 
-	if age.Valid {
-		ageInt := int(age.Int64)
-		user.Age = &ageInt
+	if dob.Valid {
+		user.DateOfBirth = &dob.String
 	}
 	if gender.Valid {
 		user.Gender = &gender.String
@@ -130,10 +129,10 @@ func GetUserInfo(userId int) (repo.User, error) {
 		return err
 	}
 */
-func AddNewUser(username, email, hashedPass, firstName, lastName, gender string, age int, nickname, about, avatar, cover string) error {
+func AddNewUser(username, email, hashedPass, firstName, lastName, gender string, dob string, nickname, about, avatar, cover string) error {
 	_, err := repo.DB.Exec(
 		repo.INSERT_USERNAME_EMAIL_PASSHASH,
-		username, email, hashedPass, firstName, lastName, age, gender, nickname, about, avatar, cover,
+		username, email, hashedPass, firstName, lastName, dob, gender, nickname, about, avatar, cover,
 	)
 	return err
 }

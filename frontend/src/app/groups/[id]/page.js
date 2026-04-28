@@ -43,6 +43,38 @@ export default function GroupDetailsPage() {
   const [visibleMembersCount, setVisibleMembersCount] = useState(5);
   const [showActions, setShowActions] = useState(false);
 
+  const hydrateCommentCounts = async (postsToHydrate) => {
+    const hydratedPosts = await Promise.all(
+      (postsToHydrate || []).map(async (post) => {
+        try {
+          const postType = post.group_id ? "group_post" : "post";
+          const res = await fetch(
+            `http://localhost:8080/posts/${post.id}/comments?post_type=${postType}`,
+            { credentials: "include" }
+          );
+          if (!res.ok) {
+            return {
+              ...post,
+              comments_count: typeof post.comments_count === "number" ? post.comments_count : 0,
+            };
+          }
+          const comments = await res.json();
+          return {
+            ...post,
+            comments_count: Array.isArray(comments) ? comments.length : 0,
+          };
+        } catch (err) {
+          return {
+            ...post,
+            comments_count: typeof post.comments_count === "number" ? post.comments_count : 0,
+          };
+        }
+      })
+    );
+
+    return hydratedPosts;
+  };
+
   const redirectToGroupsWithToast = (message, type = "success") => {
     window.sessionStorage.setItem("groupsToast", JSON.stringify({ message, type }));
     router.replace("/groups");
@@ -68,23 +100,24 @@ export default function GroupDetailsPage() {
         throw new Error("Failed to fetch group details");
       }
       const data = await res.json();
+      const hydratedPosts = await hydrateCommentCounts(data.posts || []);
       
       if (currentOffset === 0) {
         setIsMember(data.group.is_member);
-        setPosts(data.posts || []);
+        setPosts(hydratedPosts);
         setEvents(data.events || []);
         setInviteState(data.group.member_status);
         setGroup(data);
         setGroupe_id(data.group);
-        setOffset(data.posts?.length || 0);
-        setHasMore((data.posts?.length || 0) === 10);
+        setOffset(hydratedPosts.length || 0);
+        setHasMore((hydratedPosts.length || 0) === 10);
       } else {
         setPosts((prev) => {
-          const combined = [...prev, ...(data.posts || [])];
-          return Array.from(new Map(combined.map(p => [p.id, p])).values());
+          const combined = [...prev, ...hydratedPosts];
+          return Array.from(new Map(combined.map(p => [`${p.group_id ? "group" : "post"}_${p.id}`, p])).values());
         });
-        setOffset(currentOffset + (data.posts?.length || 0));
-        setHasMore((data.posts?.length || 0) === 10);
+        setOffset(currentOffset + hydratedPosts.length);
+        setHasMore(hydratedPosts.length === 10);
       }
     } catch (err) {
       console.error(err);
@@ -224,7 +257,8 @@ export default function GroupDetailsPage() {
       }
 
       const createdPost = await res.json();
-      setPosts((prev) => [createdPost, ...prev]);
+      const hydratedCreatedPosts = await hydrateCommentCounts([createdPost]);
+      setPosts((prev) => [...hydratedCreatedPosts, ...prev]);
       setNewTitle("");
       setNewContent("");
       setImageFile(null);

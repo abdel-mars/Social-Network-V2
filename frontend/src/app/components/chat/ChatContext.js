@@ -143,8 +143,9 @@ export function ChatProvider({ children }) {
                         if (pathname !== "/chat") {
                             setLastNotification({
                                 group_id: msg.group_id,
+                                group_title: msg.group_title,
                                 sender_name: msg.sender?.username || "Someone",
-                                content: `[Group] ${msg.content}`,
+                                content: `${msg.group_title || "Group"}: ${msg.content}`,
                                 sent_at: msg.sent_at,
                             });
                         }

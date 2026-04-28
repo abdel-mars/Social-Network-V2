@@ -113,6 +113,7 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
                 u.avatar, gp.title, gp.content, gp.image, gp.created_at, gp.group_id, g.title,
                 (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'like') AS likes_count,
                 (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'dislike') AS dislikes_count,
+                (SELECT COUNT(*) FROM group_post_comments gpc WHERE gpc.group_post_id = gp.id) AS comments_count,
                 (SELECT reaction_type FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.user_id = ?) AS user_reaction
             FROM group_posts gp
             JOIN users u ON gp.creator_id = u.id
@@ -137,8 +138,9 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 				var postGroupTitle string
 				var likesCount int
 				var dislikesCount int
+				var commentsCount int
 				var userReaction sql.NullString
-				if err := postsRows.Scan(&id, &creatorID, &username, &fullName, &avatar, &title, &content, &image, &createdAt, &postGroupID, &postGroupTitle, &likesCount, &dislikesCount, &userReaction); err != nil {
+				if err := postsRows.Scan(&id, &creatorID, &username, &fullName, &avatar, &title, &content, &image, &createdAt, &postGroupID, &postGroupTitle, &likesCount, &dislikesCount, &commentsCount, &userReaction); err != nil {
 					continue
 				}
 				post := map[string]any{
@@ -153,6 +155,7 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 					"group_title":    postGroupTitle,
 					"likes_count":    likesCount,
 					"dislikes_count": dislikesCount,
+					"comments_count": commentsCount,
 					"userReaction":   nil,
 				}
 				if userReaction.Valid {

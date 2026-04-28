@@ -5,7 +5,7 @@ const (
 	MAP_POSTS_WITH_CATEGORY = `INSERT INTO post_categories (post_id, category_id) VALUES (?, ?);
                             UPDATE categories_count SET post_count = post_count + 1 WHERE category_id = ?;`
 
-	INSERT_NEW_COMMENT         = `INSERT INTO comments (user_id, post_id, content) VALUES (?, ?, ?)`
+	INSERT_NEW_COMMENT         = `INSERT INTO comments (user_id, post_id, content, image_path) VALUES (?, ?, ?, ?)`
 	INIT_POST_META_DATA        = `INSERT OR IGNORE INTO post_metadata (id, post_count) VALUES (1, 0);`
 	INIT_FIELDS_QUERY          = `INSERT OR IGNORE INTO categories (name) VALUES (?)`
 	INIT_POST_CATEGORIES_COUNT = `INSERT OR IGNORE INTO categories_count (category_id, post_count) VALUES (?, 0)`
@@ -189,4 +189,13 @@ const (
   `
   UPDATE_CAT_COUNT = `UPDATE categories_count SET post_count = ? WHERE category_id = ?; `
 
+  INSERT_MESSAGE_REACTION = `INSERT INTO message_reactions (message_id, user_id) VALUES (?, ?)`
+  DELETE_MESSAGE_REACTION = `DELETE FROM message_reactions WHERE message_id = ? AND user_id = ?`
+  GET_MESSAGE_REACTION_COUNT = `SELECT COUNT(*) FROM message_reactions WHERE message_id = ?`
+  IS_MESSAGE_LIKED = `SELECT 1 FROM message_reactions WHERE message_id = ? AND user_id = ?`
+
+  INSERT_GROUP_MESSAGE_REACTION = `INSERT INTO group_message_reactions (group_message_id, user_id) VALUES (?, ?)`
+  DELETE_GROUP_MESSAGE_REACTION = `DELETE FROM group_message_reactions WHERE group_message_id = ? AND user_id = ?`
+  GET_GROUP_MESSAGE_REACTION_COUNT = `SELECT COUNT(*) FROM group_message_reactions WHERE group_message_id = ?`
+  IS_GROUP_MESSAGE_LIKED = `SELECT 1 FROM group_message_reactions WHERE group_message_id = ? AND user_id = ?`
 )

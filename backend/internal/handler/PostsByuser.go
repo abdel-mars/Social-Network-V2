@@ -51,6 +51,7 @@ func getUserPosts(userID int) ([]get.Posts, error) {
                p.title, p.content, p.image_path, p.created_at, p.updated_at,
                (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='like') AS likes_count,
                (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='dislike') AS dislikes_count,
+               (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comments_count,
                (SELECT reaction_type FROM reactions r WHERE r.post_id = p.id AND r.user_id = ?) AS user_reaction
         FROM posts p
         JOIN users u ON p.user_id = u.id
@@ -72,7 +73,7 @@ func getUserPosts(userID int) ([]get.Posts, error) {
         if err := rows.Scan(
             &p.ID, &p.UserID, &p.UserName, &p.FullName, &p.Avatar,
             &p.Title, &p.Content, &p.ImagePath, &p.CreatedAt, &p.UpdatedAt,
-            &p.LikesCount, &p.DislikesCount, &userReaction,
+            &p.LikesCount, &p.DislikesCount, &p.CommentsCount, &userReaction,
         ); err != nil {
             return nil, err
         }

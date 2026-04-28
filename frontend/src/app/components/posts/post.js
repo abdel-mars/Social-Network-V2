@@ -6,7 +6,7 @@ import { timeAgo } from "../../lib/time";
 import { useReactions } from "../../hooks/useReactions";
 import { PostModel } from "../postpoup/postcontent";
 import { useState, useEffect } from "react";
-import { MessageSquare } from "lucide-react";
+import { Globe, Lock, MessageSquare, Users } from "lucide-react";
 import { ImagePreview } from "../ui/ImagePreview";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +23,13 @@ export function RenderPosts({ post, setPosts }) {
     setSelectedPost,
   });
   const postType = post.group_id ? "group_post" : "post";
+  const privacyMeta = {
+    public: { label: "Public", icon: Globe, title: "Public (Everyone)" },
+    almost_private: { label: "Followers", icon: Users, title: "Followers only" },
+    private: { label: "Private", icon: Lock, title: "Private (Specific followers only)" },
+  };
+  const privacyInfo = privacyMeta[post.privacy];
+  const PrivacyIcon = privacyInfo?.icon;
 
   useEffect(() => {
     if (!selectedPost) return;
@@ -34,7 +41,18 @@ export function RenderPosts({ post, setPosts }) {
         );
         if (!res.ok) return;
         const data = await res.json();
-        setComments(data);
+        const normalizedComments = Array.isArray(data) ? data : [];
+        setComments(normalizedComments);
+        setPosts((prevPosts) =>
+          prevPosts.map((currentPost) =>
+            currentPost.id === selectedPost.id && Boolean(currentPost.group_id) === Boolean(selectedPost.group_id)
+              ? { ...currentPost, comments_count: normalizedComments.length }
+              : currentPost
+          )
+        );
+        setSelectedPost((prev) =>
+          prev ? { ...prev, comments_count: normalizedComments.length } : prev
+        );
       } catch (err) {
         console.error("Failed to fetch comments:", err);
       }
@@ -69,14 +87,10 @@ export function RenderPosts({ post, setPosts }) {
           <span className={styles.authorName}>{post.full_name || post.user_name}</span>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <span className={styles.postTime}>{timeAgo(post.created_at)}</span>
-            {post.privacy === "private" && (
-              <span title="Private (Specific followers only)" style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
-                🔒 Private
-              </span>
-            )}
-            {post.privacy === "almost_private" && (
-              <span title="Almost Private (Followers only)" style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
-                👥 Followers
+            {privacyInfo && post.privacy !== "public" && PrivacyIcon && (
+              <span className={styles.privacyBadge} title={privacyInfo.title}>
+                <PrivacyIcon size={12} />
+                {privacyInfo.label}
               </span>
             )}
           </div>
@@ -116,7 +130,7 @@ export function RenderPosts({ post, setPosts }) {
           />
           <button className={styles.commentBtn} onClick={() => setSelectedPost(post)}>
             <MessageSquare size={15} />
-            Comment
+            <span>{post.comments_count ?? 0}</span>
           </button>
         </div>
       </div>
@@ -127,6 +141,7 @@ export function RenderPosts({ post, setPosts }) {
           setSelectedPost={setSelectedPost}
           setPosts={setPosts}
           comment={comments}
+          setComments={setComments}
           newComment={newComment}
           setNewComment={setNewcomment}
           handleReaction={handleReaction}

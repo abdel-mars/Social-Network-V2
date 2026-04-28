@@ -8,7 +8,7 @@ import { useChat } from "./ChatContext";
 import style from "./chat.module.css";
 
 export default function ChatWindow({ conversation, messages, setMessages, onSendMessage, onSendTyping, isTyping, onBack }) {
-  const { unreadCounts } = useChat();
+  const { socket } = useChat();
   const [loading, setLoading] = useState(false);
   const [loadMoreLoading, setLoadMoreLoading] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -109,6 +109,32 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
     }
   }, [messages, isTyping]);
 
+  const toggleReaction = (messageId) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    
+    // Optimistic UI update
+    setMessages((prev) => 
+      prev.map(msg => {
+        if (msg.id === messageId) {
+          const wasLiked = msg.user_liked;
+          return {
+            ...msg,
+            user_liked: !wasLiked,
+            like_count: wasLiked ? Math.max(0, msg.like_count - 1) : msg.like_count + 1
+          };
+        }
+        return msg;
+      })
+    );
+
+    socket.send(JSON.stringify({
+      type: "reaction",
+      message_id: messageId,
+      group_id: conversation.group_id || 0,
+      recipient_id: conversation.user_id || 0
+    }));
+  };
+
   if (!conversation) {
     return (
       <div className={style.chatWindowEmpty}>
@@ -167,7 +193,7 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
         ) : (
           <>
             {messages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} />
+              <MessageBubble key={msg.id} message={msg} onReact={toggleReaction} />
             ))}
             {isTyping && (
               <div className={style.typingStatus}>

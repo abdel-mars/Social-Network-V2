@@ -1,56 +1,53 @@
 .reactionRow {
   display: flex;
-  flex: 1.3;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  align-items: center;
+  gap: 10px;
+  flex: 1;
 }
 
-.reactionRow:hover {
-  border-color: var(--accent-light);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+.reactionGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .reactionBtn {
-  display: flex;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  flex: 1;
-  padding: 10px 14px;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition);
-  font-family: 'Nunito', sans-serif;
-}
-
-.reactionBtn:first-child {
-  border-right: 1px solid var(--border);
+  transition: border-color var(--transition), background var(--transition), color var(--transition), transform var(--transition);
 }
 
 .reactionBtn:hover {
+  border-color: var(--accent-light);
+  background: var(--accent-bg);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.active {
+  border-color: rgba(91, 124, 246, 0.22);
   background: var(--accent-bg);
   color: var(--accent);
 }
 
-.active {
-  background: var(--accent) !important;
-  color: white !important;
-  box-shadow: inset 0 0 8px rgba(0,0,0,0.08); /* inner shadow for depth */
-}
-
-.active:first-child {
-  border-right-color: var(--accent-dark) !important;
-}
-
 .activeDislike {
-  background: #f05454 !important;
-  color: white !important;
-  box-shadow: inset 0 0 8px rgba(0,0,0,0.08);
+  border-color: rgba(240, 84, 84, 0.2);
+  background: rgba(240, 84, 84, 0.08);
+  color: #f05454;
+}
+
+.count {
+  min-width: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1;
 }
