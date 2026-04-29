@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,9 +41,10 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		isPrivate = 1
 	}
 
-	// Fetch current user data to get old avatar path
+	// Fetch current user data to get old avatar and cover paths
 	var oldAvatar string
-	err = key.DB.QueryRow("SELECT avatar FROM users WHERE id = ?", userID).Scan(&oldAvatar)
+	var oldCover sql.NullString
+	err = key.DB.QueryRow("SELECT avatar, cover FROM users WHERE id = ?", userID).Scan(&oldAvatar, &oldCover)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
@@ -70,12 +72,38 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		avatarPath = newAvatarPath
 	}
 
+	var coverPath = ""
+	if oldCover.Valid {
+		coverPath = oldCover.String
+	}
+	
+	coverFile, coverHandler, err := r.FormFile("cover")
+	if err == nil {
+		defer coverFile.Close()
+
+		// Generate new path
+		newCoverPath := fmt.Sprintf("uploads/cover_%d_%s", time.Now().Unix(), coverHandler.Filename)
+		f, err := os.Create(newCoverPath)
+		if err != nil {
+			http.Error(w, "Cannot save cover", http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+		io.Copy(f, coverFile)
+
+		// Delete old cover if it exists
+		if coverPath != "" {
+			os.Remove(coverPath)
+		}
+		coverPath = newCoverPath
+	}
+
 	// Update DB
 	_, err = key.DB.Exec(`
 		UPDATE users 
-		SET first_name = ?, last_name = ?, nickname = ?, about = ?, is_private = ?, avatar = ?, updated_at = CURRENT_TIMESTAMP
+		SET first_name = ?, last_name = ?, nickname = ?, about = ?, is_private = ?, avatar = ?, cover = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
-	`, firstName, lastName, nickname, about, isPrivate, avatarPath, userID)
+	`, firstName, lastName, nickname, about, isPrivate, avatarPath, coverPath, userID)
 
 	if err != nil {
 		fmt.Println("Error updating profile:", err)
@@ -88,6 +116,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":    "Profile updated successfully",
 		"avatar":     avatarPath,
+		"cover":      coverPath,
 		"first_name": firstName,
 		"last_name":  lastName,
 		"nickname":   nickname,

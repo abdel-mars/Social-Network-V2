@@ -32,7 +32,10 @@ func AddNewPost(userId int, titel string, content string, image string, privacy 
 func GetAddedPost(id int) (*repo.Posts, error) {
     query := `
         SELECT p.id, p.user_id, u.username, u.first_name || ' ' || u.last_name AS full_name,
-               p.title, p.content, p.privacy, image_path, p.created_at, p.updated_at
+               u.avatar, p.title, p.content, p.privacy, image_path, p.created_at, p.updated_at,
+               (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='like') AS likes_count,
+               (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='dislike') AS dislikes_count,
+               (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comments_count
         FROM posts p
         JOIN users u ON p.user_id = u.id
         WHERE p.id = ?
@@ -41,7 +44,8 @@ func GetAddedPost(id int) (*repo.Posts, error) {
 
     var post repo.Posts
     err := row.Scan(&post.ID, &post.UserID, &post.UserName, &post.FullName,
-                    &post.Title, &post.Content, &post.Privacy, &post.ImagePath, &post.CreatedAt, &post.UpdatedAt)
+                    &post.Avatar, &post.Title, &post.Content, &post.Privacy, &post.ImagePath, &post.CreatedAt, &post.UpdatedAt,
+                    &post.LikesCount, &post.DislikesCount, &post.CommentsCount)
     if err != nil {
         return nil, err
     }

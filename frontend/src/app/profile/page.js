@@ -27,6 +27,38 @@ export default function ProfilePage() {
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [error, setError] = useState(null);
 
+  const hydrateCommentCounts = async (postsToHydrate) => {
+    const hydratedPosts = await Promise.all(
+      (postsToHydrate || []).map(async (post) => {
+        try {
+          const postType = post.group_id ? "group_post" : "post";
+          const res = await fetch(
+            `http://localhost:8080/posts/${post.id}/comments?post_type=${postType}`,
+            { credentials: "include" }
+          );
+          if (!res.ok) {
+            return {
+              ...post,
+              comments_count: typeof post.comments_count === "number" ? post.comments_count : 0,
+            };
+          }
+          const comments = await res.json();
+          return {
+            ...post,
+            comments_count: Array.isArray(comments) ? comments.length : 0,
+          };
+        } catch (err) {
+          return {
+            ...post,
+            comments_count: typeof post.comments_count === "number" ? post.comments_count : 0,
+          };
+        }
+      })
+    );
+
+    return hydratedPosts;
+  };
+
   useEffect(() => {
     let id = localStorage.getItem("userId");
     setloggedInUserId(id);
@@ -157,7 +189,8 @@ export default function ProfilePage() {
         const res = await fetch(`http://localhost:8080/GetCUser?id=${userId}`, { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch posts");
         const data = await res.json();
-        setPosts(data);
+        const hydratedPosts = await hydrateCommentCounts(Array.isArray(data) ? data : []);
+        setPosts(hydratedPosts);
       } catch (err) {
         console.error("Failed to fetch posts:", err);
       }
@@ -174,6 +207,7 @@ export default function ProfilePage() {
       about: updatedData.about,
       is_private: updatedData.is_private ? 1 : 0,
       avatar: updatedData.avatar,
+      cover: updatedData.cover,
     }));
     setIsPrivate(updatedData.is_private ? 1 : 0);
   };
@@ -255,12 +289,23 @@ export default function ProfilePage() {
 
       <div className={styles.pageContent}>
         <div className={styles.profileCard}>
-          <div className={styles.cover}></div>
+          <div className={styles.cover}>
+            <img 
+              src={user.cover ? `http://localhost:8080/${user.cover}` : "/cover.jpg"} 
+              alt="Cover" 
+            />
+          </div>
 
           <div className={styles.profileBody}>
             <div className={styles.avatarWrapper}>
               <img
-                src={user.avatar ? `http://localhost:8080/${user.avatar}` : "/default-avatar.png"}
+                src={
+                  user.avatar 
+                    ? `http://localhost:8080/${user.avatar}` 
+                    : user.gender?.toLowerCase() === "female" || user.gender?.toLowerCase() === "women"
+                      ? "/default-female-avatar.svg"
+                      : "/default-male-avatar.svg"
+                }
                 alt={`${user.first_name} ${user.last_name}`}
                 className={styles.avatar}
               />
@@ -316,7 +361,7 @@ export default function ProfilePage() {
                 </div>
                 <div className={styles.detailChip}>
                   <Cake size={13} />
-                  <span>{user.age} years old</span>
+                  <span>Born on {user.date_of_birth}</span>
                 </div>
                 <div className={styles.detailChip}>
                   <VenusAndMars size={13} />

@@ -117,6 +117,9 @@ export default function ChatPage() {
           const currentConv = selectedConvRef.current;
           if (currentConv && currentConv.group_id === msg.group_id) {
             markAsRead(undefined, msg.group_id);
+            if (prev.some((existing) => existing.id === msg.id)) {
+              return prev;
+            }
             return [...prev, msg];
           }
           return prev;
@@ -139,6 +142,28 @@ export default function ChatPage() {
         return;
       }
 
+      if (data.type === "reaction_update") {
+        const currentUserId = parseInt(localStorage.getItem("userId") || "0");
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id !== data.message_id) {
+              return msg;
+            }
+
+            return {
+              ...msg,
+              like_count: data.like_count,
+              user_liked: data.reactor_id === currentUserId ? data.is_liked : msg.user_liked,
+            };
+          })
+        );
+        return;
+      }
+
+      if (data.type !== "chat") {
+        return;
+      }
+
       const msg = data;
       setMessages((prev) => {
         const currentConv = selectedConvRef.current;
@@ -147,6 +172,9 @@ export default function ChatPage() {
           (msg.recipient_id === currentConv.user_id || msg.sender_id === currentConv.user_id) &&
           !currentConv.group_id // Ensure it's not a group session
         ) {
+          if (prev.some((existing) => existing.id === msg.id)) {
+            return prev;
+          }
           if (msg.sender_id === currentConv.user_id) {
             markAsRead(msg.sender_id);
           }

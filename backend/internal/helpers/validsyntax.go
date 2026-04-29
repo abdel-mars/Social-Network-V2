@@ -69,3 +69,10 @@ func SqlDateFormater(date string) string {
 	}
 	return tmp
 }
+func ValidDate(s string) bool {
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return false
+	}
+	return t.Before(time.Now())
+}

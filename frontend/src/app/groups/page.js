@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import GroupCard from "../components/groupcard/groupcard";
 import { Renderbar } from "../components/bar/bar";
-import UsersList from "../components/usersuggestion/users_seg";
 import FriendsList from "../components/friendlist/friendlist";
 import { CreateGroupModal } from "../components/createGroup/createGroup";
 import Toast from "../components/ui/Toast";
@@ -76,11 +75,8 @@ export default function GroupsPage() {
           <div className={styles.rightCard}>
             <h3 className={styles.rightCardTitle}>
               <Users size={16} />
-              Suggested Friends
+              Friends List
             </h3>
-            <UsersList />
-          </div>
-          <div className={styles.rightCard}>
             <FriendsList />
           </div>
         </aside>

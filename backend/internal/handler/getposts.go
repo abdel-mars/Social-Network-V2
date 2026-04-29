@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	get "social-network-backend/internal/repository"
 	key "social-network-backend/internal/repository"
 )
@@ -22,7 +23,20 @@ func Getposts(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    posts, err := getAllPosts(userID)
+    limit := 10
+    if l := r.URL.Query().Get("limit"); l != "" {
+        if val, err := strconv.Atoi(l); err == nil {
+            limit = val
+        }
+    }
+    offset := 0
+    if o := r.URL.Query().Get("offset"); o != "" {
+        if val, err := strconv.Atoi(o); err == nil {
+            offset = val
+        }
+    }
+
+    posts, err := getAllPosts(userID, limit, offset)
     fmt.Print("THIS IS MY POSTS DATAAAA ",posts)
  
     if err != nil {
@@ -38,7 +52,7 @@ func Getposts(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func getAllPosts(userID int) ([]get.Posts, error) {
+func getAllPosts(userID, limit, offset int) ([]get.Posts, error) {
     query := `
         SELECT *
         FROM (
@@ -56,6 +70,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
                 p.updated_at,
                 (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='like') AS likes_count,
                 (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id AND r.reaction_type='dislike') AS dislikes_count,
+                (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comments_count,
                 (SELECT reaction_type FROM reactions r WHERE r.post_id = p.id AND r.user_id = ?) AS user_reaction,
                 NULL AS group_id,
                 NULL AS group_title
@@ -82,6 +97,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
                 gp.created_at AS updated_at,
                 (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type='like') AS likes_count,
                 (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type='dislike') AS dislikes_count,
+                (SELECT COUNT(*) FROM group_post_comments gpc WHERE gpc.group_post_id = gp.id) AS comments_count,
                 (SELECT reaction_type FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.user_id = ?) AS user_reaction,
                 gp.group_id,
                 g.title AS group_title
@@ -92,6 +108,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
             WHERE gm.user_id = ? AND gm.status = 'member'
         ) combined_posts
         ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
     `
     // query params:
     // 1: userID (for user_reaction)
@@ -101,7 +118,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
     // 5: userID (for group user_reaction)
     // 6: userID (for gm.user_id = ?)
 
-    rows, err := get.DB.Query(query, userID, userID, userID, userID, userID, userID)
+    rows, err := get.DB.Query(query, userID, userID, userID, userID, userID, userID, limit, offset)
     if err != nil {
         return nil, err
     }
@@ -116,7 +133,7 @@ func getAllPosts(userID int) ([]get.Posts, error) {
         if err := rows.Scan(
             &p.ID, &p.UserID, &p.UserName, &p.FullName, &p.Avatar,
             &p.Title, &p.Content, &p.Privacy, &p.ImagePath, &p.CreatedAt, &p.UpdatedAt,
-            &p.LikesCount, &p.DislikesCount, &userReaction, &groupID, &groupTitle,
+            &p.LikesCount, &p.DislikesCount, &p.CommentsCount, &userReaction, &groupID, &groupTitle,
         ); err != nil {
             return nil, err
         }

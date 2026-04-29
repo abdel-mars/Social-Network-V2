@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { AlertTriangle, Pencil, Trash2, X } from "lucide-react";
+import { AlertTriangle, Globe, Image, Lock, Pencil, Trash2, Users, X } from "lucide-react";
 import { timeAgo } from "../../lib/time";
 import { ImagePreview } from "../ui/ImagePreview";
 import { ReactionButtons } from "../reactions/ReactionButtons";
@@ -12,11 +12,32 @@ export function PostModel({
   setSelectedPost,
   setPosts,
   comment,
+  setComments,
   newComment,
   setNewComment,
   handleReaction,
 }) {
   const router = useRouter();
+  const privacyOptions = [
+    {
+      value: "public",
+      label: "Public",
+      description: "Visible to everyone",
+      icon: Globe,
+    },
+    {
+      value: "almost_private",
+      label: "Followers",
+      description: "Visible to followers",
+      icon: Users,
+    },
+    {
+      value: "private",
+      label: "Selected",
+      description: "Visible to specific followers",
+      icon: Lock,
+    },
+  ];
   const [previewImage, setPreviewImage] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -27,6 +48,7 @@ export function PostModel({
   const [editViewerIds, setEditViewerIds] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [commentImage, setCommentImage] = useState(null);
   const postType = selectedPost?.group_id ? "group_post" : "post";
   const canManagePost = Number(currentUserId) === Number(selectedPost?.user_id);
 
@@ -63,24 +85,38 @@ export function PostModel({
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !selectedPost) return;
+    if ((!newComment.trim() && !commentImage) || !selectedPost) return;
 
     try {
+      const formData = new FormData();
+      formData.append("content", newComment);
+      if (commentImage) {
+        formData.append("image", commentImage);
+      }
+
       const res = await fetch(
-        `http://localhost:8080/posts/${selectedPost.id}/comments/comments?post_type=${postType}`,
+        `http://localhost:8080/posts/${selectedPost.id}/comments?post_type=${postType}`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ content: newComment }),
+          body: formData,
         }
       );
       if (!res.ok) return;
       const newone = await res.json();
-      if (!selectedPost.comments) selectedPost.comments = [];
-      selectedPost.comments.push(newone);
-      setSelectedPost({ ...selectedPost });
+      setComments((prev) => [...(Array.isArray(prev) ? prev : []), newone]);
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === selectedPost.id
+            ? { ...post, comments_count: (post.comments_count || 0) + 1 }
+            : post
+        )
+      );
+      setSelectedPost((prev) =>
+        prev ? { ...prev, comments_count: (prev.comments_count || 0) + 1 } : prev
+      );
       setNewComment("");
+      setCommentImage(null);
     } catch (err) {
       console.error("Failed to add comment:", err);
     }
@@ -224,36 +260,51 @@ export function PostModel({
               />
 
               {postType === "post" && (
-                <div style={{ marginTop: "10px", marginBottom: "10px" }}>
-                  <select
-                    value={editPrivacy}
-                    onChange={(e) => setEditPrivacy(e.target.value)}
-                    className={styles.editInput}
-                    style={{ padding: "8px", appearance: "auto" }}
-                  >
-                    <option value="public">🌍 Public (Everyone)</option>
-                    <option value="almost_private">👥 Almost Private (Followers Only)</option>
-                    <option value="private">🔒 Private (Specific Followers)</option>
-                  </select>
+                <div className={styles.privacySection}>
+                  <div className={styles.privacyLabel}>Audience</div>
+                  <div className={styles.privacyOptions}>
+                    {privacyOptions.map((option) => {
+                      const Icon = option.icon;
+                      const active = editPrivacy === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`${styles.privacyOption} ${active ? styles.privacyOptionActive : ""}`}
+                          onClick={() => setEditPrivacy(option.value)}
+                          aria-pressed={active}
+                        >
+                          <span className={styles.privacyIcon}>
+                            <Icon size={16} />
+                          </span>
+                          <span className={styles.privacyText}>
+                            <span className={styles.privacyTitle}>{option.label}</span>
+                            <span className={styles.privacyDescription}>{option.description}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
 
                   {editPrivacy === "private" && (
-                    <div style={{ marginTop: "10px", background: "var(--bg-card)", padding: "10px", borderRadius: "8px" }}>
-                      <p style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "5px" }}>Select who can see this:</p>
+                    <div className={styles.followersSelection}>
+                      <p className={styles.followersTitle}>Choose followers</p>
                       {followers.length > 0 ? (
-                        <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid var(--border)", padding: "10px", borderRadius: "8px" }}>
+                        <div className={styles.followersList}>
                           {followers.map(f => (
-                            <label key={f.id} style={{ display: "flex", gap: "8px", cursor: "pointer", marginBottom: "6px" }}>
-                              <input 
+                            <label key={f.id} className={styles.followerItem}>
+                              <input
+                                className={styles.followerCheckbox}
                                 type="checkbox" 
                                 checked={editViewerIds.includes(f.id)}
                                 onChange={() => toggleViewer(f.id)}
                               />
-                              {f.full_name || f.username}
+                              <span className={styles.followerName}>{f.full_name || f.username}</span>
                             </label>
                           ))}
                         </div>
                       ) : (
-                        <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>You have no followers to select.</p>
+                        <p className={styles.emptyFollowers}>You have no followers to select.</p>
                       )}
                     </div>
                   )}
@@ -298,7 +349,7 @@ export function PostModel({
 
         {/* Comments */}
         <div className={styles.commentsSection}>
-          <h4 className={styles.commentsTitle}>Comments</h4>
+          <h4 className={styles.commentsTitle}>Comments ({selectedPost.comments_count ?? comment?.length ?? 0})</h4>
 
           <div className={styles.commentsList}>
             {Array.isArray(comment) && comment.length > 0 ? (
@@ -320,6 +371,56 @@ export function PostModel({
                     <span className={styles.commentTime}>{timeAgo(c.created_at)}</span>
                   </div>
                   <p className={styles.commentText}>{c.text}</p>
+                  {c.image_path && (
+                    <img
+                      src={`http://localhost:8080/${c.image_path}`}
+                      alt="Comment attachment"
+                      className={styles.commentImage}
+                      onClick={() => setPreviewImage(`http://localhost:8080/${c.image_path}`)}
+                    />
+                  )}
+                  <div className={styles.commentActions}>
+                    <button 
+                      className={`${styles.commentReactBtn} ${c.userReaction === 'like' ? styles.commentReacted : ''}`}
+                      onClick={async () => {
+                        const targetType = postType === "group_post" ? "group_post_comment" : "comment";
+                        try {
+                          const res = await fetch("http://localhost:8080/reactions", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: "include",
+                            body: JSON.stringify({ post_id: c.id, reaction: "like", post_type: targetType }),
+                          });
+                          if (res.ok) {
+                            const data = await res.json();
+                            const newComments = comment.map(cmt => 
+                              cmt.id === c.id
+                                ? {
+                                    ...cmt,
+                                    likes_count: data.likes_count,
+                                    dislikes_count: data.dislikes_count,
+                                    userReaction: data.userReaction,
+                                  }
+                                : cmt
+                            );
+                            setComments(newComments);
+                          }
+                        } catch (err) {
+                          console.error("Failed to react to comment", err);
+                        }
+                      }}
+                      title="Like comment"
+                    >
+                      <svg 
+                        width="14" height="14" viewBox="0 0 24 24" 
+                        fill={c.userReaction === 'like' ? "currentColor" : "none"} 
+                        stroke="currentColor" strokeWidth="2"
+                      >
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                      {c.likes_count > 0 && <span>{c.likes_count}</span>}
+                    </button>
+                  </div>
                 </div>
               ))
             ) : (
@@ -327,22 +428,60 @@ export function PostModel({
             )}
           </div>
 
-          <div className={styles.commentInput}>
-            <textarea
-              id="new-comment-input"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write a comment..."
-              className={styles.textarea}
-              rows={2}
-            />
-            <button
-              id="submit-comment-btn"
-              onClick={handleAddComment}
-              className={styles.submitBtn}
-            >
-              Post
-            </button>
+          <div className={styles.commentInputContainer}>
+            {commentImage && (
+              <div className={styles.previewContainer}>
+                <img src={URL.createObjectURL(commentImage)} className={styles.commentPreview} alt="Preview" />
+                <button className={styles.removePreview} onClick={() => setCommentImage(null)}>
+                  <X size={12} />
+                </button>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                  {commentImage.name.length > 10 
+                    ? commentImage.name.substring(0, 10) + "..." 
+                    : commentImage.name}
+                </span>
+              </div>
+            )}
+            <div className={styles.commentInput}>
+              <textarea
+                id="new-comment-input"
+                value={newComment}
+                onChange={(e) => {
+                  if (e.target.value.length <= 300) {
+                    setNewComment(e.target.value);
+                  }
+                }}
+                placeholder="Write a comment..."
+                className={styles.textarea}
+                rows={1}
+              />
+              <div className={styles.commentActions}>
+                <span className={`${styles.charCount} ${newComment.length >= 280 ? styles.limit : ""}`}>
+                  {300 - newComment.length}
+                </span>
+                <label className={styles.imageUploadBtn} htmlFor="comment-image-input" title="Attach image (max 1)">
+                  <Image size={18} />
+                  <input
+                    id="comment-image-input"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) setCommentImage(file);
+                    }}
+                  />
+                </label>
+                <button
+                  id="submit-comment-btn"
+                  onClick={handleAddComment}
+                  className={styles.submitBtn}
+                  disabled={!newComment.trim() && !commentImage}
+                >
+                  Post
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

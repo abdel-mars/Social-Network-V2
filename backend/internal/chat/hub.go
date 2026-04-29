@@ -186,3 +186,14 @@ func (h *Hub) broadcastGroupOnlineCount(userID int) {
 		}
 	}
 }
+
+func (h *Hub) BroadcastToGroup(groupID int, data []byte) {
+	members, err := GetGroupMembers(groupID)
+	if err != nil {
+		fmt.Printf("[Chat] failed to get group members for broadcasting: %v\n", err)
+		return
+	}
+	for _, memberID := range members {
+		h.BroadcastToUser(memberID, data)
+	}
+}

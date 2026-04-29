@@ -6,25 +6,33 @@ import styles from "./ReactionButtons.module.css";
 export function ReactionButtons({ userReaction, likesCount, dislikesCount, onReact }) {
   return (
     <div className={styles.reactionRow}>
-      <button
-        id="like-btn"
-        onClick={(e) => { e.stopPropagation(); onReact("like"); }}
-        className={`${styles.reactionBtn} ${userReaction === "like" ? styles.active : ""}`}
-        data-reaction="like"
-      >
-        <ThumbsUp size={15} strokeWidth={2.2} />
-        <span>{likesCount}</span>
-      </button>
+      <div className={styles.reactionGroup}>
+        <button
+          id="like-btn"
+          onClick={(e) => { e.stopPropagation(); onReact("like"); }}
+          className={`${styles.reactionBtn} ${userReaction === "like" ? styles.active : ""}`}
+          data-reaction="like"
+          title="Like"
+          aria-label="Like"
+        >
+          <ThumbsUp size={15} strokeWidth={2.2} />
+        </button>
+        <span className={styles.count}>{likesCount ?? 0}</span>
+      </div>
 
-      <button
-        id="dislike-btn"
-        onClick={(e) => { e.stopPropagation(); onReact("dislike"); }}
-        className={`${styles.reactionBtn} ${userReaction === "dislike" ? styles.activeDislike : ""}`}
-        data-reaction="dislike"
-      >
-        <ThumbsDown size={15} strokeWidth={2.2} />
-        <span>{dislikesCount}</span>
-      </button>
+      <div className={styles.reactionGroup}>
+        <button
+          id="dislike-btn"
+          onClick={(e) => { e.stopPropagation(); onReact("dislike"); }}
+          className={`${styles.reactionBtn} ${userReaction === "dislike" ? styles.activeDislike : ""}`}
+          data-reaction="dislike"
+          title="Dislike"
+          aria-label="Dislike"
+        >
+          <ThumbsDown size={15} strokeWidth={2.2} />
+        </button>
+        <span className={styles.count}>{dislikesCount ?? 0}</span>
+      </div>
     </div>
   );
 }

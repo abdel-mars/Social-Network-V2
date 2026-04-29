@@ -46,7 +46,7 @@ func GetGroupChatHistory(w http.ResponseWriter, r *http.Request) {
 		offset = o
 	}
 
-	messages, err := chat.GetGroupHistory(groupID, limit, offset)
+	messages, err := chat.GetGroupHistory(groupID, userID, limit, offset)
 	if err != nil {
 		http.Error(w, "Failed to fetch history", http.StatusInternalServerError)
 		return

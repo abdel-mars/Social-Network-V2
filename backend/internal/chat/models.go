@@ -10,6 +10,7 @@ type Message struct {
 	SenderID    int       `json:"sender_id"`
 	RecipientID int       `json:"recipient_id,omitempty"`
 	GroupID     int       `json:"group_id,omitempty"`
+	GroupTitle  string    `json:"group_title,omitempty"`
 	Content     string    `json:"content"`
 	SentAt      time.Time `json:"sent_at"`
 	IsRead      bool      `json:"is_read"`
@@ -17,7 +18,9 @@ type Message struct {
 		Username string  `json:"username"`
 		Avatar   *string `json:"avatar"`
 	} `json:"sender"`
-	UserStatus *UserStatus `json:"user_status,omitempty"`
+	UserStatus  *UserStatus `json:"user_status,omitempty"`
+	LikeCount   int         `json:"like_count"`
+	UserLiked   bool        `json:"user_liked"`
 }
 
 type UserStatus struct {
@@ -26,9 +29,10 @@ type UserStatus struct {
 }
 
 type IncomingMessage struct {
-	Type        string `json:"type"` // "chat", "typing", or "group_chat"
+	Type        string `json:"type"` // "chat", "typing", "group_chat", or "reaction"
 	RecipientID int    `json:"recipient_id,omitempty"`
 	GroupID     int    `json:"group_id,omitempty"`
+	MessageID   int    `json:"message_id,omitempty"`
 	Content     string `json:"content"`
 }
 

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	key "social-network-backend/internal/repository"
 )
@@ -54,6 +55,19 @@ func Create_Group_Event(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	eventID, _ := res.LastInsertId()
+
+	// Notify all group members about the new event
+	rows, err := key.DB.Query("SELECT user_id FROM group_members WHERE group_id = ? AND status = 'member' AND user_id != ?", req.GroupID, userID)
+	if err == nil {
+		defer rows.Close()
+		message := fmt.Sprintf("A new event '%s' was created in group %d", req.Title, req.GroupID)
+		for rows.Next() {
+			var memberID int
+			if err := rows.Scan(&memberID); err == nil {
+				AddNotification_Group(memberID, userID, "group_event_created", message, req.GroupID)
+			}
+		}
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

@@ -49,6 +49,15 @@
   color: var(--text-muted);
 }
 
+.privacyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .groupMeta {
   display: flex;
   align-items: center;
@@ -106,24 +115,26 @@
 }
 
 .commentBtn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: var(--radius-pill);
+  min-width: 44px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: border-color var(--transition), background var(--transition), color var(--transition), transform var(--transition);
 }
 
 .commentBtn:hover {
   border-color: var(--accent-light);
   background: var(--accent-bg);
   color: var(--accent);
+  transform: translateY(-1px);
 }

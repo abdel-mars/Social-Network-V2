@@ -22,6 +22,19 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	limit := 10
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if val, err := strconv.Atoi(l); err == nil {
+			limit = val
+		}
+	}
+	offset := 0
+	if o := r.URL.Query().Get("offset"); o != "" {
+		if val, err := strconv.Atoi(o); err == nil {
+			offset = val
+		}
+	}
+
 	row := key.DB.QueryRow(`
         SELECT 
             g.id, g.title, g.description, g.creator_id,
@@ -100,13 +113,15 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
                 u.avatar, gp.title, gp.content, gp.image, gp.created_at, gp.group_id, g.title,
                 (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'like') AS likes_count,
                 (SELECT COUNT(*) FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.reaction_type = 'dislike') AS dislikes_count,
+                (SELECT COUNT(*) FROM group_post_comments gpc WHERE gpc.group_post_id = gp.id) AS comments_count,
                 (SELECT reaction_type FROM group_post_reactions gr WHERE gr.group_post_id = gp.id AND gr.user_id = ?) AS user_reaction
             FROM group_posts gp
             JOIN users u ON gp.creator_id = u.id
             JOIN groups g ON gp.group_id = g.id
             WHERE gp.group_id = ?
             ORDER BY gp.created_at DESC
-        `, userID, groupID)
+            LIMIT ? OFFSET ?
+        `, userID, groupID, limit, offset)
 		if err == nil {
 			defer postsRows.Close()
 			for postsRows.Next() {
@@ -123,8 +138,9 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 				var postGroupTitle string
 				var likesCount int
 				var dislikesCount int
+				var commentsCount int
 				var userReaction sql.NullString
-				if err := postsRows.Scan(&id, &creatorID, &username, &fullName, &avatar, &title, &content, &image, &createdAt, &postGroupID, &postGroupTitle, &likesCount, &dislikesCount, &userReaction); err != nil {
+				if err := postsRows.Scan(&id, &creatorID, &username, &fullName, &avatar, &title, &content, &image, &createdAt, &postGroupID, &postGroupTitle, &likesCount, &dislikesCount, &commentsCount, &userReaction); err != nil {
 					continue
 				}
 				post := map[string]any{
@@ -139,6 +155,7 @@ func Get_Group_By_ID(w http.ResponseWriter, r *http.Request) {
 					"group_title":    postGroupTitle,
 					"likes_count":    likesCount,
 					"dislikes_count": dislikesCount,
+					"comments_count": commentsCount,
 					"userReaction":   nil,
 				}
 				if userReaction.Valid {

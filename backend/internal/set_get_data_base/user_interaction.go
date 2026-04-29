@@ -63,11 +63,12 @@ func GetUserHashByUsername(username string) (int, string, error) {
 func GetUserInfo(userId int) (repo.User, error) {
 	var user repo.User
 
-	var age sql.NullInt64
+	var dob sql.NullString
 	var gender sql.NullString
 	var nickname sql.NullString
 	var about sql.NullString
 	var avatar sql.NullString
+	var cover sql.NullString
 	var isPrivate sql.NullBool // Changed from sql.NullInt64 to sql.NullBool
 
 	err := repo.DB.QueryRow(repo.SELECT_USER_BY_ID, userId).Scan(
@@ -76,11 +77,12 @@ func GetUserInfo(userId int) (repo.User, error) {
 		&user.Email,
 		&user.FirstName,
 		&user.LastName,
-		&age,
+		&dob,
 		&gender,
 		&nickname,
 		&about,
 		&avatar,
+		&cover,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 		&isPrivate, // Now using sql.NullBool
@@ -90,9 +92,8 @@ func GetUserInfo(userId int) (repo.User, error) {
 		return user, err
 	}
 
-	if age.Valid {
-		ageInt := int(age.Int64)
-		user.Age = &ageInt
+	if dob.Valid {
+		user.DateOfBirth = &dob.String
 	}
 	if gender.Valid {
 		user.Gender = &gender.String
@@ -105,6 +106,9 @@ func GetUserInfo(userId int) (repo.User, error) {
 	}
 	if avatar.Valid {
 		user.Avatar = &avatar.String
+	}
+	if cover.Valid {
+		user.Cover = &cover.String
 	}
 	if isPrivate.Valid {
 		var privateInt int
@@ -125,10 +129,10 @@ func GetUserInfo(userId int) (repo.User, error) {
 		return err
 	}
 */
-func AddNewUser(username, email, hashedPass, firstName, lastName, gender string, age int, nickname, about, avatar string) error {
+func AddNewUser(username, email, hashedPass, firstName, lastName, gender string, dob string, nickname, about, avatar, cover string) error {
 	_, err := repo.DB.Exec(
 		repo.INSERT_USERNAME_EMAIL_PASSHASH,
-		username, email, hashedPass, firstName, lastName, age, gender, nickname, about, avatar,
+		username, email, hashedPass, firstName, lastName, dob, gender, nickname, about, avatar, cover,
 	)
 	return err
 }

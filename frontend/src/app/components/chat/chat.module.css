@@ -770,3 +770,74 @@
   /* Gray */
   opacity: 0.6;
 }
+
+/* Reactions */
+.bubbleContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.self .bubbleContainer {
+  flex-direction: row-reverse;
+}
+
+.reactBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.bubbleContainer:hover .reactBtn {
+  opacity: 1;
+}
+
+.reactBtn:hover {
+  color: #ec4899; /* Pink heart */
+  background: var(--surface-3);
+  transform: scale(1.1);
+}
+
+.reactBtn.reacted {
+  opacity: 1;
+  color: #ec4899;
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.1);
+}
+
+.msgFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.self .msgFooter {
+  flex-direction: row-reverse;
+}
+
+.reactionBadge {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ec4899;
+  box-shadow: var(--shadow-sm);
+}

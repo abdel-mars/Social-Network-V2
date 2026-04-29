@@ -13,6 +13,8 @@ export function ProfileEditModal({ user, onClose, onUpdate }) {
   const [isPrivate, setIsPrivate] = useState(user.is_private || 0);
   const [avatarFile, setAvatarFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(user.avatar ? `http://localhost:8080/${user.avatar}` : "/default-avatar.png");
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState(user.cover ? `http://localhost:8080/${user.cover}` : "/cover.jpg");
   const [submitting, setSubmitting] = useState(false);
 
   // ... (existing logic remains same)
@@ -21,6 +23,14 @@ export function ProfileEditModal({ user, onClose, onUpdate }) {
     if (file) {
       setAvatarFile(file);
       setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleCoverChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCoverFile(file);
+      setCoverPreviewUrl(URL.createObjectURL(file));
     }
   };
 
@@ -36,6 +46,9 @@ export function ProfileEditModal({ user, onClose, onUpdate }) {
     formData.append("is_private", isPrivate);
     if (avatarFile) {
       formData.append("avatar", avatarFile);
+    }
+    if (coverFile) {
+      formData.append("cover", coverFile);
     }
 
     try {
@@ -73,6 +86,22 @@ export function ProfileEditModal({ user, onClose, onUpdate }) {
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.coverSection} style={{ marginBottom: '20px', position: 'relative' }}>
+            <div className={styles.coverWrapper} style={{ height: '120px', borderRadius: '8px', overflow: 'hidden', position: 'relative' }}>
+              <img src={coverPreviewUrl} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <label htmlFor="cover-upload" style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '6px', borderRadius: '50%', cursor: 'pointer' }} title="Change Cover">
+                <Camera size={18} />
+                <input
+                  id="cover-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverChange}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+          </div>
+
           <div className={styles.avatarSection}>
             <div className={styles.avatarWrapper}>
               <img src={previewUrl} alt="Avatar Preview" className={styles.avatarPreview} />

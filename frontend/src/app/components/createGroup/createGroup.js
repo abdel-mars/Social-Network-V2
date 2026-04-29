@@ -64,24 +64,32 @@ export function CreateGroupModal() {
 
             <form onSubmit={handleSubmit} className={styles.form}>
               <div className={styles.field}>
-                <label className={styles.label}>Group Name</label>
+                <div className={styles.labelRow}>
+                  <label className={styles.label}>Group Name</label>
+                  <span className={styles.charCount}>{title.length}/25</span>
+                </div>
                 <input
                   type="text"
-                  placeholder="e.g. Nintendo Switch Hub"
+                  placeholder="e.g. Gamers"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
+                  maxLength={25}
                   className={styles.input}
                 />
               </div>
 
               <div className={styles.field}>
-                <label className={styles.label}>Description</label>
+                <div className={styles.labelRow}>
+                  <label className={styles.label}>Description</label>
+                  <span className={styles.charCount}>{desc.length}/100</span>
+                </div>
                 <textarea
                   placeholder="What is this group about?"
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                   required
+                  maxLength={100}
                   className={styles.textarea}
                 />
               </div>

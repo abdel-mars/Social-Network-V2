@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Image } from "lucide-react";
+import { X, Image, Globe, Users, Lock } from "lucide-react";
 import styles from "./Createpost.module.css";
 
 export function Renderformpost({
@@ -18,6 +18,27 @@ export function Renderformpost({
   setViewerIds,
   followers,
 }) {
+  const privacyOptions = [
+    {
+      value: "public",
+      label: "Public",
+      description: "Visible to everyone",
+      icon: Globe,
+    },
+    {
+      value: "almost_private",
+      label: "Followers",
+      description: "Visible to followers",
+      icon: Users,
+    },
+    {
+      value: "private",
+      label: "Selected",
+      description: "Visible to specific followers",
+      icon: Lock,
+    },
+  ];
+
   const toggleViewer = (id) => {
     if (viewerIds.includes(id)) {
       setViewerIds(viewerIds.filter((vId) => vId !== id));
@@ -58,32 +79,49 @@ export function Renderformpost({
           />
 
           {privacy !== undefined && (
-            <select
-              value={privacy}
-              onChange={(e) => setPrivacy(e.target.value)}
-              className={styles.input}
-              style={{ padding: "8px", marginTop: "10px", appearance: "auto" }}
-            >
-              <option value="public">🌍 Public (Everyone)</option>
-              <option value="almost_private">👥 Almost Private (Followers Only)</option>
-              <option value="private">🔒 Private (Specific Followers)</option>
-            </select>
+            <div className={styles.privacySection}>
+              <div className={styles.privacyHeader}>
+                <span className={styles.privacyLabel}>Audience</span>
+              </div>
+              <div className={styles.privacyOptions}>
+                {privacyOptions.map((option) => {
+                  const Icon = option.icon;
+                  const active = privacy === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`${styles.privacyOption} ${active ? styles.privacyOptionActive : ""}`}
+                      onClick={() => setPrivacy(option.value)}
+                      aria-pressed={active}
+                    >
+                      <span className={styles.privacyIcon}>
+                        <Icon size={16} />
+                      </span>
+                      <span className={styles.privacyText}>
+                        <span className={styles.privacyTitle}>{option.label}</span>
+                        <span className={styles.privacyDescription}>{option.description}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           {privacy === "private" && followers && followers.length > 0 && (
             <div className={styles.followersSelection}>
-              <p style={{ fontSize: "14px", fontWeight: "bold", margin: "10px 0 5px 0" }}>
-                Select who can see this:
-              </p>
-              <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid var(--border)", borderRadius: "8px", padding: "10px" }}>
+              <p className={styles.followersTitle}>Choose followers</p>
+              <div className={styles.followersList}>
                 {followers.map(f => (
-                  <label key={f.id} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", cursor: "pointer" }}>
-                    <input 
+                  <label key={f.id} className={styles.followerItem}>
+                    <input
+                      className={styles.followerCheckbox}
                       type="checkbox" 
                       checked={viewerIds.includes(f.id)}
                       onChange={() => toggleViewer(f.id)}
                     />
-                    {f.full_name || f.username}
+                    <span className={styles.followerName}>{f.full_name || f.username}</span>
                   </label>
                 ))}
               </div>
