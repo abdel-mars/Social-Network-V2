@@ -21,15 +21,18 @@
 
 .overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: rgba(0,0,0,0.40);
   backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   z-index: 1000;
   padding: 20px;
   animation: fadeIn 0.2s ease;
+  overflow: auto;
 }
 
 @keyframes fadeIn {
