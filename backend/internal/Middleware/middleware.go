@@ -16,16 +16,16 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, `{"message":"unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
-		fmt.Println("The User Id It's Her ")
+		fmt.Println("The User Id is Here ")
 		fmt.Println(ses)
 		userID, _, err := se.SelectUserSession(ses.Value) 
-		fmt.Println("The User Id It's Her NOW ..........")
+		fmt.Println("The User Id is Here NOW ..........")
 		fmt.Println(userID)
 		if err != nil {
 			http.Error(w, `{"message":"unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
-		fmt.Println("im her ooooooooo-----------------------------------------------------------p")
+		fmt.Println("im here .................")
 		// Store user ID in context
 		ctx := context.WithValue(r.Context(), key.UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
