@@ -19,6 +19,10 @@ type GroupEventRespondRequest struct {
 	Response string `json:"response"`
 }
 
+type GroupEventDeleteRequest struct {
+	EventID int `json:"event_id"`
+}
+
 func Create_Group_Event(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -126,5 +130,64 @@ func Respond_Group_Event(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message":  "Response recorded",
 		"response": req.Response,
+	})
+}
+
+func Delete_Group_Event(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := r.Context().Value(key.UserIDKey).(int)
+
+	var req GroupEventDeleteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.EventID == 0 {
+		http.Error(w, "Missing event_id", http.StatusBadRequest)
+		return
+	}
+
+	// Verify event exists and get creator_id and group_id
+	var creatorID, groupID int
+	err := key.DB.QueryRow("SELECT creator_id, group_id FROM group_events WHERE id = ?", req.EventID).Scan(&creatorID, &groupID)
+	if err != nil {
+		http.Error(w, "Event not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if the user is the event creator
+	if userID != creatorID {
+		http.Error(w, "Forbidden: Only event creator can delete this event", http.StatusForbidden)
+		return
+	}
+
+	// Delete the event (cascade will delete associated responses)
+	_, err = key.DB.Exec("DELETE FROM group_events WHERE id = ?", req.EventID)
+	if err != nil {
+		http.Error(w, "Failed to delete event", http.StatusInternalServerError)
+		return
+	}
+
+	// Notify group members about the deleted event
+	rows, err := key.DB.Query("SELECT user_id FROM group_members WHERE group_id = ? AND status = 'member' AND user_id != ?", groupID, userID)
+	if err == nil {
+		defer rows.Close()
+		message := fmt.Sprintf("An event was deleted from the group")
+		for rows.Next() {
+			var memberID int
+			if err := rows.Scan(&memberID); err == nil {
+				AddNotification_Group(memberID, userID, "group_event_deleted", message, groupID)
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Event deleted successfully",
 	})
 }

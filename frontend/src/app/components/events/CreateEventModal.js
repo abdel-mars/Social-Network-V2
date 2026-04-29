@@ -1,23 +1,39 @@
 "use client";
 
+import { useState } from "react";
 import { X } from "lucide-react";
 import styles from "./events.module.css";
 
 export function CreateEventModal({ isOpen, onClose, onCreate }) {
+  const [isLoading, setIsLoading] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    
     const formData = new FormData(e.target);
     const day = formData.get("eventDay");
     const time = formData.get("eventTime");
     const eventDate = `${day}T${time}`;
     
-    onCreate({
-      title: formData.get("title"),
-      description: formData.get("description"),
-      eventDate: eventDate,
-    });
+    // Close modal immediately
+    onClose();
+    
+    try {
+      await onCreate({
+        title: formData.get("title"),
+        description: formData.get("description"),
+        eventDate: eventDate,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -46,7 +62,9 @@ export function CreateEventModal({ isOpen, onClose, onCreate }) {
               <input type="time" name="eventTime" required className={styles.inputField} />
             </div>
           </div>
-          <button type="submit" className={styles.submitBtn}>Create Event</button>
+          <button type="submit" className={styles.submitBtn} disabled={isLoading}>
+            {isLoading ? "Creating..." : "Create Event"}
+          </button>
         </form>
       </div>
     </div>

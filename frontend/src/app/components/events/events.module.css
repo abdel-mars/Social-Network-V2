@@ -54,15 +54,23 @@
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border);
   transition: box-shadow var(--transition);
+  position: relative;
 }
 .eventCard:hover {
   box-shadow: var(--shadow-md);
+}
+.eventCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 .eventHeader {
   display: flex;
   gap: 16px;
   align-items: flex-start;
-  margin-bottom: 16px;
+  flex: 1;
 }
 .eventDateBadge {
   background: var(--surface-2);
@@ -111,6 +119,8 @@
 .eventActions {
   border-top: 1px solid var(--border);
   padding-top: 16px;
+  display: flex;
+  align-items: center;
 }
 .actionButtons {
   display: flex;
@@ -152,6 +162,26 @@
 }
 .activeNotGoing:hover {
   background: var(--surface-3);
+}
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+  min-width: 36px;
+  min-height: 36px;
+}
+.deleteBtn:hover {
+  background: #ff4757;
+  border-color: #ff4757;
+  color: #fff;
 }
 
 /* Modal Styles matching the existing group modal confirm box */
@@ -252,12 +282,104 @@
   cursor: pointer;
   transition: all var(--transition);
 }
-.submitBtn:hover {
+.submitBtn:hover:not(:disabled) {
   background: var(--accent-dark);
   box-shadow: 0 4px 16px rgba(91,124,246,0.3);
+}
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .dateRow {
   display: flex;
   gap: 16px;
   align-items: center;
 }
+
+/* Confirmation Modal Styles */
+.confirmModal {
+  width: min(100%, 380px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 28px 24px;
+  position: relative;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.confirmHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.confirmHeader h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.confirmMessage {
+  margin: 0 0 24px 0;
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancelBtn {
+  flex: 1;
+  padding: 12px 20px;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.cancelBtn:hover {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+
+.deleteConfirmBtn {
+  flex: 1;
+  padding: 12px 20px;
+  background: #ff4757;
+  color: white;
+  border: 1px solid #ff4757;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.deleteConfirmBtn:hover {
+  background: #ff3838;
+  border-color: #ff3838;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+}
+

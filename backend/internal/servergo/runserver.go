@@ -77,6 +77,7 @@ func Mux() *http.ServeMux {
 	social.HandleFunc("/group-post/delete", midle.AuthMiddleware(handler.Delete_Group_Post))
 	social.HandleFunc("/group-event/create", midle.AuthMiddleware(handler.Create_Group_Event))
 	social.HandleFunc("/group-event/respond", midle.AuthMiddleware(handler.Respond_Group_Event))
+	social.HandleFunc("/group-event/delete", midle.AuthMiddleware(handler.Delete_Group_Event))
 	// <<---->>..
 	return social
 }

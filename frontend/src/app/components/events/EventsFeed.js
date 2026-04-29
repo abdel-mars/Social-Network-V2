@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import styles from "./events.module.css";
-import { Calendar, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, CheckCircle2, XCircle, ChevronDown, ChevronUp, Trash2, AlertCircle } from "lucide-react";
 
-export function EventsFeed({ events, setEvents }) {
+export function EventsFeed({ events, setEvents, currentUserId }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   if (!events || events.length === 0) return null;
 
@@ -41,6 +42,26 @@ export function EventsFeed({ events, setEvents }) {
     }
   };
 
+  const handleDeleteEvent = async () => {
+    const eventId = deleteConfirm;
+    setDeleteConfirm(null);
+
+    try {
+      const res = await fetch("http://localhost:8080/group-event/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ event_id: eventId }),
+      });
+      if (!res.ok) throw new Error("Failed to delete event");
+
+      // Immediately remove the event from the UI
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className={styles.eventsContainer}>
       <div className={styles.sectionHeader} onClick={() => setIsExpanded(!isExpanded)}>
@@ -60,17 +81,28 @@ export function EventsFeed({ events, setEvents }) {
 
             return (
               <div key={e.id} className={styles.eventCard}>
-                <div className={styles.eventHeader}>
-                  <div className={styles.eventDateBadge}>
-                    <span className={styles.month}>{format(dateObj, "MMM")}</span>
-                    <span className={styles.day}>{format(dateObj, "d")}</span>
-                  </div>
-                  <div className={styles.eventInfo}>
-                    <h4 className={styles.eventTitle}>{e.title}</h4>
-                    <div className={styles.eventMeta}>
-                      <Calendar size={13} /> {formattedDate} • by {e.creator_name}
+                <div className={styles.eventCardHeader}>
+                  <div className={styles.eventHeader}>
+                    <div className={styles.eventDateBadge}>
+                      <span className={styles.month}>{format(dateObj, "MMM")}</span>
+                      <span className={styles.day}>{format(dateObj, "d")}</span>
+                    </div>
+                    <div className={styles.eventInfo}>
+                      <h4 className={styles.eventTitle}>{e.title}</h4>
+                      <div className={styles.eventMeta}>
+                        <Calendar size={13} /> {formattedDate} • by {e.creator_name}
+                      </div>
                     </div>
                   </div>
+                  {currentUserId === e.creator_id && (
+                    <button
+                      className={styles.deleteBtn}
+                      onClick={() => setDeleteConfirm(e.id)}
+                      title="Delete event"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
                 <p className={styles.eventDescription}>{e.description}</p>
                 
@@ -93,6 +125,35 @@ export function EventsFeed({ events, setEvents }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm !== null && (
+        <div className={styles.modalOverlay} onClick={() => setDeleteConfirm(null)}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmHeader}>
+              <AlertCircle size={24} style={{ color: '#ff4757' }} />
+              <h3>Delete Event?</h3>
+            </div>
+            <p className={styles.confirmMessage}>
+              Are you sure you want to delete this event? This action cannot be undone.
+            </p>
+            <div className={styles.confirmActions}>
+              <button 
+                className={styles.cancelBtn}
+                onClick={() => setDeleteConfirm(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.deleteConfirmBtn}
+                onClick={handleDeleteEvent}
+              >
+                Delete Event
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

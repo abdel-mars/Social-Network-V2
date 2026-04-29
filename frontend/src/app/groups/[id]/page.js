@@ -285,7 +285,6 @@ export default function GroupDetailsPage() {
       });
       if (!res.ok) throw new Error("Failed to create event");
       await fetchGroup();
-      setIsEventModalOpen(false);
       setToast({ message: "Event created successfully.", type: "success" });
     } catch (err) {
       console.error(err);
@@ -520,7 +519,7 @@ export default function GroupDetailsPage() {
                 </div>
               </div>
 
-              <EventsFeed events={events} setEvents={setEvents} />
+              <EventsFeed events={events} setEvents={setEvents} currentUserId={currentUserId} />
 
               {/* Posts list */}
               <div className={styles.postsFeed}>
