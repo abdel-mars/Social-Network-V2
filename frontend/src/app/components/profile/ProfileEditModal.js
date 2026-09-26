@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Camera } from "lucide-react";
 import styles from "./ProfileEditModal.module.css";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 export function ProfileEditModal({ user, onClose, onUpdate }) {
   const [firstName, setFirstName] = useState(user.first_name || "");
@@ -12,9 +13,9 @@ export function ProfileEditModal({ user, onClose, onUpdate }) {
   const [about, setAbout] = useState(user.about || "");
   const [isPrivate, setIsPrivate] = useState(user.is_private || 0);
   const [avatarFile, setAvatarFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(user.avatar ? `http://localhost:8080/${user.avatar}` : "/default-avatar.png");
+  const [previewUrl, setPreviewUrl] = useState(user.avatar ? `${UPLOAD_URL}/${user.avatar}` : "/default-avatar.png");
   const [coverFile, setCoverFile] = useState(null);
-  const [coverPreviewUrl, setCoverPreviewUrl] = useState(user.cover ? `http://localhost:8080/${user.cover}` : "/cover.jpg");
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState(user.cover ? `${UPLOAD_URL}/${user.cover}` : "/cover.jpg");
   const [submitting, setSubmitting] = useState(false);
 
   // ... (existing logic remains same)
@@ -52,7 +53,7 @@ export function ProfileEditModal({ user, onClose, onUpdate }) {
     }
 
     try {
-      const res = await fetch("http://localhost:8080/profile/update", {
+      const res = await fetch(`${API_URL}/profile/update`, {
         method: "POST",
         body: formData,
         credentials: "include",

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import styles from "./users_seg.module.css";
 import { FollowButton } from "../follow/FollowButton";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 export default function UsersList() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function UsersList() {
   useEffect(() => {
     async function fetchUsers() {
       try {
-        const res = await fetch("http://localhost:8080/users-sug", { credentials: "include" });
+        const res = await fetch(`${API_URL}/users-sug`, { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch users");
         const data = await res.json();
         setUsers(data);
@@ -34,7 +35,7 @@ export default function UsersList() {
   const handleFollowToggle = async (user_id) => {
     try {
       setFolloading((prev) => ({ ...prev, [user_id]: true }));
-      const res = await fetch("http://localhost:8080/toggle-follow", {
+      const res = await fetch(`${API_URL}/toggle-follow`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ followed_id: user_id }),
@@ -70,7 +71,7 @@ export default function UsersList() {
           return (
             <div key={u.user_id} className={styles.userItem}>
               <img
-                src={u.image_path ? `http://localhost:8080/${u.image_path}` : "/default-avatar.png"}
+                src={u.image_path ? `${UPLOAD_URL}/${u.image_path}` : "/default-avatar.png"}
                 alt={u.username}
                 className={styles.avatar}
               />

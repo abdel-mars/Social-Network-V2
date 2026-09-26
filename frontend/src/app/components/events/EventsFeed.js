@@ -4,6 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import styles from "./events.module.css";
 import { Calendar, CheckCircle2, XCircle, ChevronDown, ChevronUp, Trash2, AlertCircle } from "lucide-react";
+import { API_URL } from "../../lib/api";
 
 export function EventsFeed({ events, setEvents, currentUserId }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -13,7 +14,7 @@ export function EventsFeed({ events, setEvents, currentUserId }) {
 
   const handleRespond = async (eventId, responseType) => {
     try {
-      const res = await fetch("http://localhost:8080/group-event/respond", {
+      const res = await fetch(`${API_URL}/group-event/respond`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -47,7 +48,7 @@ export function EventsFeed({ events, setEvents, currentUserId }) {
     setDeleteConfirm(null);
 
     try {
-      const res = await fetch("http://localhost:8080/group-event/delete", {
+      const res = await fetch(`${API_URL}/group-event/delete`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

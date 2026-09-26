@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
+import { API_URL, WS_URL } from "../../lib/api";
 
 const ChatContext = createContext();
 
@@ -17,7 +18,7 @@ export function ChatProvider({ children }) {
 
     const fetchUnreadCounts = useCallback(async () => {
         try {
-            const res = await fetch("http://localhost:8080/chat/conversations", {
+            const res = await fetch(`${API_URL}/chat/conversations`, {
                 credentials: "include",
             });
             if (res.ok) {
@@ -38,7 +39,7 @@ export function ChatProvider({ children }) {
 
     const markAsRead = useCallback(async (senderId, groupId = null) => {
         try {
-            const res = await fetch("http://localhost:8080/chat/read", {
+            const res = await fetch(`${API_URL}/chat/read`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ sender_id: senderId, group_id: groupId }),
@@ -89,7 +90,7 @@ export function ChatProvider({ children }) {
 
         let isDestroyed = false;
         fetchUnreadCounts();
-        const ws = new WebSocket("ws://localhost:8080/ws/chat");
+        const ws = new WebSocket(`${WS_URL}/api/ws/chat`);
         socketRef.current = ws;
         setSocket(ws);
 

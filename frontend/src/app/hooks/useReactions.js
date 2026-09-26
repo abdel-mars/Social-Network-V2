@@ -1,9 +1,10 @@
 "use client";
+import { API_URL } from "../lib/api";
 
 export function useReactions({ setPosts, selectedPost, setSelectedPost }) {
   const handleReaction = async (reaction, postId, postType = "post") => {
     try {
-      const res = await fetch("http://localhost:8080/reactions", {
+      const res = await fetch(`${API_URL}/reactions`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

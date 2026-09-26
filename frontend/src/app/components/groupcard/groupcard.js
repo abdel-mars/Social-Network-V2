@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Globe, Lock, ShieldCheck } from "lucide-react";
 import { useNotifications } from "../notifications/NotificationsContext";
 import styles from "./groupcard.module.css";
+import { API_URL } from "../../lib/api";
 
 export default function GroupCard({ group, Clickable = true }) {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function GroupCard({ group, Clickable = true }) {
     e.stopPropagation();
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/join`, {
+      const res = await fetch(`${API_URL}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { API_URL } from "../../lib/api";
 
 const NotificationsContext = createContext(null);
 
@@ -61,7 +62,7 @@ export function NotificationsProvider({ children }) {
 
     let isMounted = true;
 
-    fetch("http://localhost:8080/notifications", {
+    fetch(`${API_URL}/notifications`, {
       method: "GET",
       credentials: "include",
     })
@@ -76,7 +77,7 @@ export function NotificationsProvider({ children }) {
       })
       .catch((err) => console.error("Fetch error:", err));
 
-    const eventSource = new EventSource("http://localhost:8080/events", {
+    const eventSource = new EventSource(`${API_URL}/events`, {
       withCredentials: true,
     });
 
@@ -166,7 +167,7 @@ export function NotificationsProvider({ children }) {
   const markNotificationsRead = async (ids) => {
     if (!Array.isArray(ids) || ids.length === 0) return;
     try {
-      const res = await fetch("http://localhost:8080/notifications/read", {
+      const res = await fetch(`${API_URL}/notifications/read`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -180,7 +181,7 @@ export function NotificationsProvider({ children }) {
 
   const clearAllNotifications = async () => {
     try {
-      const res = await fetch("http://localhost:8080/notifications/clear", {
+      const res = await fetch(`${API_URL}/notifications/clear`, {
         method: "POST",
         credentials: "include",
       });

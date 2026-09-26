@@ -8,6 +8,7 @@ import { CreateGroupModal } from "../components/createGroup/createGroup";
 import Toast from "../components/ui/Toast";
 import { Users } from "lucide-react";
 import styles from "./page.module.css";
+import { API_URL } from "../lib/api";
 
 export default function GroupsPage() {
   const [groups, setGroups] = useState([]);
@@ -16,7 +17,7 @@ export default function GroupsPage() {
   useEffect(() => {
     async function fetchGroups() {
       try {
-        const res = await fetch("http://localhost:8080/Get_Groups", {
+        const res = await fetch(`${API_URL}/Get_Groups`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Unauthorized or fetch failed");

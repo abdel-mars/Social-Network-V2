@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, UserPlus } from "lucide-react";
 import styles from "./inviteFriends.module.css";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 export default function InviteFriendsModal({ groupId, onClose, onInviteSent }) {
   const [friends, setFriends] = useState([]);
@@ -15,7 +16,7 @@ export default function InviteFriendsModal({ groupId, onClose, onInviteSent }) {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        const res = await fetch("http://localhost:8080/Friends", {
+        const res = await fetch(`${API_URL}/Friends`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch friends");
@@ -65,7 +66,7 @@ export default function InviteFriendsModal({ groupId, onClose, onInviteSent }) {
     setInviting(true);
     try {
       for (const friendId of selectedFriends) {
-        await fetch("http://localhost:8080/group/invite", {
+        await fetch(`${API_URL}/group/invite`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -133,7 +134,7 @@ export default function InviteFriendsModal({ groupId, onClose, onInviteSent }) {
                   <div className={styles.friendLeft}>
                     <div className={styles.avatarWrapper}>
                       {friend.image_path ? (
-                        <img src={`http://localhost:8080/${friend.image_path}`} alt="" className={styles.avatar} />
+                        <img src={`${UPLOAD_URL}/${friend.image_path}`} alt="" className={styles.avatar} />
                       ) : (
                         <div className={`${styles.avatarPlaceholder} ${friend.gender?.toLowerCase() === 'female' ? styles.female : ''}`}>
                           {friend.full_name?.[0] || friend.username?.[0] || "?"}

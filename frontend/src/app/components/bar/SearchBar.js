@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import styles from "./searchbar.module.css";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 export default function SearchBar({ onMobileNav }) {
   const [query, setQuery] = useState("");
@@ -34,7 +35,7 @@ export default function SearchBar({ onMobileNav }) {
       }
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:8080/search-users?q=${encodeURIComponent(query)}`, {
+        const res = await fetch(`${API_URL}/search-users?q=${encodeURIComponent(query)}`, {
           credentials: "include"
         });
         if (res.ok) {
@@ -89,7 +90,7 @@ export default function SearchBar({ onMobileNav }) {
                 onClick={() => handleSelect(user.user_id)}
               >
                 <img
-                  src={user.image_path ? `http://localhost:8080/${user.image_path}` : "/default-avatar.png"}
+                  src={user.image_path ? `${UPLOAD_URL}/${user.image_path}` : "/default-avatar.png"}
                   alt={user.username}
                   className={styles.avatar}
                   onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Users, X } from "lucide-react";
 import styles from "./createGroup.module.css";
+import { API_URL } from "../../lib/api";
 
 export function CreateGroupModal() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export function CreateGroupModal() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8080/Create_Group", {
+      const res = await fetch(`${API_URL}/Create_Group`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ Title: title, Description: desc }),

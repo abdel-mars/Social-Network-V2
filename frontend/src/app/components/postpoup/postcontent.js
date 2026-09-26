@@ -6,6 +6,7 @@ import { ReactionButtons } from "../reactions/ReactionButtons";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./postcontent.module.css";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 export function PostModel({
   selectedPost,
@@ -69,7 +70,7 @@ export function PostModel({
 
   useEffect(() => {
     if (isEditing && postType === "post" && followers.length === 0) {
-      fetch("http://localhost:8080/my-followers", { credentials: "include" })
+      fetch(`${API_URL}/my-followers`, { credentials: "include" })
         .then(res => res.json())
         .then(data => setFollowers(data || []))
         .catch(err => console.error("Failed to fetch followers:", err));
@@ -95,7 +96,7 @@ export function PostModel({
       }
 
       const res = await fetch(
-        `http://localhost:8080/posts/${selectedPost.id}/comments?post_type=${postType}`,
+        `${API_URL}/posts/${selectedPost.id}/comments?post_type=${postType}`,
         {
           method: "POST",
           credentials: "include",
@@ -128,7 +129,7 @@ export function PostModel({
     try {
       setSaving(true);
       const res = await fetch(
-        postType === "group_post" ? "http://localhost:8080/group-post/update" : "http://localhost:8080/post/update",
+        postType === "group_post" ? `${API_URL}/group-post/update` : `${API_URL}/post/update`,
         {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -160,7 +161,7 @@ export function PostModel({
     try {
       setSaving(true);
       const res = await fetch(
-        postType === "group_post" ? "http://localhost:8080/group-post/delete" : "http://localhost:8080/post/delete",
+        postType === "group_post" ? `${API_URL}/group-post/delete` : `${API_URL}/post/delete`,
         {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -198,7 +199,7 @@ export function PostModel({
             onMouseOut={(e) => e.currentTarget.style.opacity = "1"}
           >
             <img
-              src={selectedPost.avatar ? `http://localhost:8080/${selectedPost.avatar}` : "/default-avatar.png"}
+              src={selectedPost.avatar ? `${UPLOAD_URL}/${selectedPost.avatar}` : "/default-avatar.png"}
               alt="avatar"
               className={styles.avatar}
               onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/default-avatar.png"; }}
@@ -330,10 +331,10 @@ export function PostModel({
 
           {!isEditing && selectedPost.image_path && (
             <img
-              src={`http://localhost:8080/${selectedPost.image_path}`}
+              src={`${UPLOAD_URL}/${selectedPost.image_path}`}
               alt="Post"
               className={styles.image}
-              onClick={() => setPreviewImage(`http://localhost:8080/${selectedPost.image_path}`)}
+              onClick={() => setPreviewImage(`${UPLOAD_URL}/${selectedPost.image_path}`)}
               style={{ cursor: "zoom-in" }}
             />
           )}
@@ -374,10 +375,10 @@ export function PostModel({
                   <p className={styles.commentText}>{c.text}</p>
                   {c.image_path && (
                     <img
-                      src={`http://localhost:8080/${c.image_path}`}
+                      src={`${UPLOAD_URL}/${c.image_path}`}
                       alt="Comment attachment"
                       className={styles.commentImage}
-                      onClick={() => setPreviewImage(`http://localhost:8080/${c.image_path}`)}
+                      onClick={() => setPreviewImage(`${UPLOAD_URL}/${c.image_path}`)}
                     />
                   )}
                   <div className={styles.commentActions}>
@@ -386,7 +387,7 @@ export function PostModel({
                       onClick={async () => {
                         const targetType = postType === "group_post" ? "group_post_comment" : "comment";
                         try {
-                          const res = await fetch("http://localhost:8080/reactions", {
+                          const res = await fetch(`${API_URL}/reactions`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             credentials: "include",

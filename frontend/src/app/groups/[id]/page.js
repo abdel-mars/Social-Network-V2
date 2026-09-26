@@ -14,6 +14,7 @@ import Toast from "../../components/ui/Toast";
 import { useNotifications } from "../../components/notifications/NotificationsContext";
 import { EventsFeed } from "../../components/events/EventsFeed";
 import { CreateEventModal } from "../../components/events/CreateEventModal";
+import { API_URL } from "../../lib/api";
 // use global styles where handy if needed, but groupdetail.module.css is primary
 
 export default function GroupDetailsPage() {
@@ -49,7 +50,7 @@ export default function GroupDetailsPage() {
         try {
           const postType = post.group_id ? "group_post" : "post";
           const res = await fetch(
-            `http://localhost:8080/posts/${post.id}/comments?post_type=${postType}`,
+            `${API_URL}/posts/${post.id}/comments?post_type=${postType}`,
             { credentials: "include" }
           );
           if (!res.ok) {
@@ -89,7 +90,7 @@ export default function GroupDetailsPage() {
     }
     
     try {
-      const res = await fetch(`http://localhost:8080/Get_Group_By_ID?id=${id}&limit=10&offset=${currentOffset}`, {
+      const res = await fetch(`${API_URL}/Get_Group_By_ID?id=${id}&limit=10&offset=${currentOffset}`, {
         credentials: "include",
       });
       if (!res.ok) {
@@ -152,7 +153,7 @@ export default function GroupDetailsPage() {
   const handleJoin = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/join`, {
+      const res = await fetch(`${API_URL}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -197,7 +198,7 @@ export default function GroupDetailsPage() {
   const handleLeaveGroup = async () => {
     setActionLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/group/leave", {
+      const res = await fetch(`${API_URL}/group/leave`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -217,7 +218,7 @@ export default function GroupDetailsPage() {
   const handleDeleteGroup = async () => {
     setActionLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/group/delete", {
+      const res = await fetch(`${API_URL}/group/delete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -245,7 +246,7 @@ export default function GroupDetailsPage() {
     if (imageFile) formData.append("image", imageFile);
 
     try {
-      const res = await fetch("http://localhost:8080/Creat_Post_Groupe", {
+      const res = await fetch(`${API_URL}/Creat_Post_Groupe`, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -272,7 +273,7 @@ export default function GroupDetailsPage() {
 
   const handleCreateEvent = async (eventData) => {
     try {
-      const res = await fetch("http://localhost:8080/group-event/create", {
+      const res = await fetch(`${API_URL}/group-event/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -336,7 +337,7 @@ export default function GroupDetailsPage() {
   const handleInviteResponse = async (newState) => {
     setInviteLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/group/invite/respond", {
+      const res = await fetch(`${API_URL}/group/invite/respond`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -9,6 +9,7 @@ const Emoji = dynamic(() => import("emoji-picker-react").then(mod => mod.Emoji),
 });
 
 import { EmojiStyle } from "emoji-picker-react";
+import { UPLOAD_URL } from "../../lib/api";
 
 export default function MessageBubble({ message, onReact }) {
   const currentUserId = parseInt(typeof window !== "undefined" ? localStorage.getItem("userId") : "0");
@@ -40,7 +41,7 @@ export default function MessageBubble({ message, onReact }) {
       {!isSelf && (
         <div className={style.msgAvatarWrapper}>
           <img
-            src={message.sender?.avatar ? `http://localhost:8080/${message.sender.avatar}` : "/default-avatar.png"}
+            src={message.sender?.avatar ? `${UPLOAD_URL}/${message.sender.avatar}` : "/default-avatar.png"}
             alt="avatar"
             className={style.msgAvatar}
             onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}

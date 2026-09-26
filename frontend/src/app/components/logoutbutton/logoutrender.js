@@ -1,10 +1,11 @@
 import style from "./logoutrender.module.css"
+import { API_URL } from "../../lib/api";
 
 export function Logoutrender({ handleNavigate }) {
   console.log("Logoutrender component is rendering"); 
     const handleLogout = async () => {
       try {
-        const res = await fetch("http://localhost:8080/logout", {
+        const res = await fetch(`${API_URL}/logout`, {
           method: "POST",
           credentials: "include",
         });

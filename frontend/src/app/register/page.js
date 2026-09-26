@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Toast from "../components/ui/Toast";
 import style from "./register.module.css";
+import { API_URL } from "../lib/api";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -34,7 +35,7 @@ export default function RegisterPage() {
     if (avatar) formData.append("avatar", avatar);
 
     try {
-      const res = await fetch("http://localhost:8080/register", {
+      const res = await fetch(`${API_URL}/register`, {
         method: "POST",
         body: formData,
       });

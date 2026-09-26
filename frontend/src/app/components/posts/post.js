@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { Globe, Lock, MessageSquare, Users } from "lucide-react";
 import { ImagePreview } from "../ui/ImagePreview";
 import { useRouter } from "next/navigation";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 export function RenderPosts({ post, setPosts }) {
   const router = useRouter();
@@ -44,7 +45,7 @@ export function RenderPosts({ post, setPosts }) {
     async function fetchComments() {
       try {
         const res = await fetch(
-          `http://localhost:8080/posts/${selectedPost.id}/comments?post_type=${selectedPost.group_id ? "group_post" : "post"}`,
+          `${API_URL}/posts/${selectedPost.id}/comments?post_type=${selectedPost.group_id ? "group_post" : "post"}`,
           { method: "GET", credentials: "include" }
         );
         if (!res.ok) return;
@@ -86,7 +87,7 @@ export function RenderPosts({ post, setPosts }) {
           onMouseOut={(e) => e.currentTarget.style.opacity = "1"}
         >
           <img
-            src={post.avatar ? `http://localhost:8080/${post.avatar}` : "/default-avatar.png"}
+            src={post.avatar ? `${UPLOAD_URL}/${post.avatar}` : "/default-avatar.png"}
             alt="Avatar"
             className={styles.avatar}
             onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "/default-avatar.png"; }}
@@ -131,12 +132,12 @@ export function RenderPosts({ post, setPosts }) {
         {/* Image */}
         {post.image_path && (
           <img
-            src={`http://localhost:8080/${post.image_path}`}
+            src={`${UPLOAD_URL}/${post.image_path}`}
             alt="Post"
             className={styles.postImage}
             onClick={(e) => {
               e.stopPropagation();
-              setPreviewImage(`http://localhost:8080/${post.image_path}`);
+              setPreviewImage(`${UPLOAD_URL}/${post.image_path}`);
             }}
           />
         )}

@@ -1,4 +1,5 @@
 "use client";
+import { UPLOAD_URL } from "../../lib/api";
 
 export function ProfileHeader({ user, followersCount, followingCount }) {
   return (
@@ -8,7 +9,7 @@ export function ProfileHeader({ user, followersCount, followingCount }) {
       </h2>
       {user.avatar && (
         <img
-          src={`http://localhost:8080/${user.avatar}`}
+          src={`${UPLOAD_URL}/${user.avatar}`}
           alt="avatar"
           style={{ width: 150, height: 150, borderRadius: "50%", marginBottom: 20 }}
         />

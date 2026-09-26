@@ -14,6 +14,7 @@ import { NotificationPanel } from "../notifications/notificationpanel";
 import { useNotifications } from "../notifications/NotificationsContext";
 import style from "./bar.module.css";
 import chatStyle from "../chat/chat.module.css";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 const NAV_ITEMS = [
   { label: "Home", path: "/home", icon: Home },
@@ -37,7 +38,7 @@ export function Renderbar() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch("http://localhost:8080/checkstate", { credentials: "include" });
+        const res = await fetch(`${API_URL}/checkstate`, { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated) {
@@ -78,7 +79,7 @@ export function Renderbar() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8080/logout", {
+      await fetch(`${API_URL}/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -186,7 +187,7 @@ export function Renderbar() {
             >
               {userData?.avatar ? (
                 <img
-                  src={`http://localhost:8080/${userData.avatar}`}
+                  src={`${UPLOAD_URL}/${userData.avatar}`}
                   alt="Avatar"
                   style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                 />
@@ -246,7 +247,7 @@ export function Renderbar() {
             >
               {userData?.avatar ? (
                 <img
-                  src={`http://localhost:8080/${userData.avatar}`}
+                  src={`${UPLOAD_URL}/${userData.avatar}`}
                   alt="Avatar"
                   style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }}
                 />

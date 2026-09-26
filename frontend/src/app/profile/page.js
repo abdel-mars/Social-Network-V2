@@ -9,6 +9,7 @@ import styles from "./page.module.css";
 import { useSearchParams } from "next/navigation";
 
 import { ProfileEditModal } from "../components/profile/ProfileEditModal";
+import { API_URL, UPLOAD_URL } from "../lib/api";
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
@@ -33,7 +34,7 @@ export default function ProfilePage() {
         try {
           const postType = post.group_id ? "group_post" : "post";
           const res = await fetch(
-            `http://localhost:8080/posts/${post.id}/comments?post_type=${postType}`,
+            `${API_URL}/posts/${post.id}/comments?post_type=${postType}`,
             { credentials: "include" }
           );
           if (!res.ok) {
@@ -76,7 +77,7 @@ export default function ProfilePage() {
     setUser(null);
     async function fetchProfile() {
       try {
-        const res = await fetch(`http://localhost:8080/profile?id=${userId}`, { credentials: "include" });
+        const res = await fetch(`${API_URL}/profile?id=${userId}`, { credentials: "include" });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           const msg =
@@ -186,7 +187,7 @@ export default function ProfilePage() {
     async function fetchPosts() {
       try {
         if (!canSeePosts) { setPosts([]); return; }
-        const res = await fetch(`http://localhost:8080/GetCUser?id=${userId}`, { credentials: "include" });
+        const res = await fetch(`${API_URL}/GetCUser?id=${userId}`, { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch posts");
         const data = await res.json();
         const hydratedPosts = await hydrateCommentCounts(Array.isArray(data) ? data : []);
@@ -215,7 +216,7 @@ export default function ProfilePage() {
   const handleFollowToggle = async () => {
     try {
       setFollowLoading(true);
-      const res = await fetch("http://localhost:8080/toggle-follow", {
+      const res = await fetch(`${API_URL}/toggle-follow`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ followed_id: Number(userId) }),
@@ -291,7 +292,7 @@ export default function ProfilePage() {
         <div className={styles.profileCard}>
           <div className={styles.cover}>
             <img 
-              src={user.cover ? `http://localhost:8080/${user.cover}` : "/cover.jpg"} 
+              src={user.cover ? `${UPLOAD_URL}/${user.cover}` : "/cover.jpg"} 
               alt="Cover" 
             />
           </div>
@@ -301,7 +302,7 @@ export default function ProfilePage() {
               <img
                 src={
                   user.avatar 
-                    ? `http://localhost:8080/${user.avatar}` 
+                    ? `${UPLOAD_URL}/${user.avatar}` 
                     : user.gender?.toLowerCase() === "female" || user.gender?.toLowerCase() === "women"
                       ? "/default-female-avatar.svg"
                       : "/default-male-avatar.svg"

@@ -6,6 +6,7 @@ import GroupInvitation from "../groupInvitation/groupInvitation";
 import { useNotifications } from "./NotificationsContext";
 import { Bell } from "lucide-react";
 import styles from "./notificationpanel.module.css";
+import { UPLOAD_URL } from "../../lib/api";
 
 function requiresInteraction(notification) {
   if (!notification) return false;
@@ -77,7 +78,7 @@ export function NotificationPanel() {
                   <div className={styles.notifItem}>
                     <img
                       className={styles.avatar}
-                      src={n.sender?.avatar ? `http://localhost:8080/${n.sender.avatar}` : "/default-avatar.png"}
+                      src={n.sender?.avatar ? `${UPLOAD_URL}/${n.sender.avatar}` : "/default-avatar.png"}
                       alt={n.sender?.first_name || "User"}
                       onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
                     />
@@ -111,7 +112,7 @@ export function NotificationPanel() {
                   <div className={styles.notifItem}>
                     <img
                       className={styles.avatar}
-                      src={n.sender?.avatar ? `http://localhost:8080/${n.sender.avatar}` : "/default-avatar.png"}
+                      src={n.sender?.avatar ? `${UPLOAD_URL}/${n.sender.avatar}` : "/default-avatar.png"}
                       alt={n.sender?.first_name || "User"}
                       onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
                     />
@@ -140,7 +141,7 @@ export function NotificationPanel() {
                   <div className={styles.notifItem}>
                     <img
                       className={styles.avatar}
-                      src={n.sender?.avatar ? `http://localhost:8080/${n.sender.avatar}` : "/default-avatar.png"}
+                      src={n.sender?.avatar ? `${UPLOAD_URL}/${n.sender.avatar}` : "/default-avatar.png"}
                       alt={n.sender?.first_name || "Admin"}
                       onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
                     />

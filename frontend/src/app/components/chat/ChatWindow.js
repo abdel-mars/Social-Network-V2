@@ -6,6 +6,7 @@ import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import { useChat } from "./ChatContext";
 import style from "./chat.module.css";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 export default function ChatWindow({ conversation, messages, setMessages, onSendMessage, onSendTyping, isTyping, onBack }) {
   const { socket } = useChat();
@@ -28,8 +29,8 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
       setLoading(true);
       try {
         const url = conversation.group_id
-          ? `http://localhost:8080/group/chat/messages?group_id=${conversation.group_id}&limit=30&offset=0`
-          : `http://localhost:8080/chat/messages?with=${conversation.user_id}&limit=30&offset=0`;
+          ? `${API_URL}/group/chat/messages?group_id=${conversation.group_id}&limit=30&offset=0`
+          : `${API_URL}/chat/messages?with=${conversation.user_id}&limit=30&offset=0`;
 
         const res = await fetch(url, { credentials: "include" });
         if (res.ok) {
@@ -59,8 +60,8 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
 
     try {
       const url = conversation.group_id
-        ? `http://localhost:8080/group/chat/messages?group_id=${conversation.group_id}&limit=30&offset=${offset}`
-        : `http://localhost:8080/chat/messages?with=${conversation.user_id}&limit=30&offset=${offset}`;
+        ? `${API_URL}/group/chat/messages?group_id=${conversation.group_id}&limit=30&offset=${offset}`
+        : `${API_URL}/chat/messages?with=${conversation.user_id}&limit=30&offset=${offset}`;
 
       const res = await fetch(url, { credentials: "include" });
       if (res.ok) {
@@ -162,7 +163,7 @@ export default function ChatWindow({ conversation, messages, setMessages, onSend
             </div>
           ) : (
             <img
-              src={conversation.avatar ? `http://localhost:8080/${conversation.avatar}` : "/default-avatar.png"}
+              src={conversation.avatar ? `${UPLOAD_URL}/${conversation.avatar}` : "/default-avatar.png"}
               alt={conversation.username}
               className={style.headerAvatar}
               onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}

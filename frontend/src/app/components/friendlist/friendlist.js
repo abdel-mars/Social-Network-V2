@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Users } from "lucide-react";
 import styles from "./friendlist.module.css";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 export default function FriendsList() {
   const [friends, setFriends] = useState([]);
@@ -21,7 +22,7 @@ export default function FriendsList() {
   const fetchFriends = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/Friends", { credentials: "include" });
+      const res = await fetch(`${API_URL}/Friends`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
       setFriends(data || []);
@@ -97,7 +98,7 @@ export default function FriendsList() {
                 onClick={() => router.push(`/profile?id=${friend.id}`)}
               >
                 <img 
-                  src={friend.image_path ? `http://localhost:8080/${friend.image_path}` : "/default-avatar.png"} 
+                  src={friend.image_path ? `${UPLOAD_URL}/${friend.image_path}` : "/default-avatar.png"} 
                   alt="avatar" 
                   className={styles.avatar} 
                   onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}

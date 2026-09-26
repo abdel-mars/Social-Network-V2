@@ -3,6 +3,9 @@ package servergo
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
+
 	initial "social-network-backend/internal/Initialdb"
 	midle "social-network-backend/internal/Middleware"
 	"social-network-backend/internal/auth"
@@ -19,6 +22,34 @@ func Dependencies() {
 	de.InitRegex()
 }
 
+// Router mounts the API under /api and keeps /uploads at the root.
+//
+// The API cannot share the root with the Next.js frontend: the backend
+// registers "/profile/" as a subtree, so Go's ServeMux would 301 "/profile"
+// to "/profile/" and shadow the frontend's own /profile page. Nesting every
+// API route under /api makes the two route spaces disjoint. StripPrefix moves
+// all routes at once, so the handlers above keep their existing paths.
+//
+// Uploaded files stay at the root because the database already stores values
+// like "uploads/photo.jpeg", which the frontend builds as ${API_URL}/${value}.
+func Router() *http.ServeMux {
+	root := http.NewServeMux()
+	root.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
+	root.Handle("/api/", http.StripPrefix("/api", Mux()))
+	return root
+}
+
+// registerTree registers a path both exactly and as a subtree.
+//
+// ServeMux answers a request for "/profile" with a 301 to "/profile/" when only
+// "/profile/" is registered. That redirect is built from the already-stripped
+// path, so its Location header loses the /api prefix and escapes to the
+// frontend. Registering the exact path too serves those requests directly.
+func registerTree(mux *http.ServeMux, path string, h http.HandlerFunc) {
+	mux.HandleFunc(path, h)
+	mux.HandleFunc(strings.TrimSuffix(path, "/"), h)
+}
+
 func Mux() *http.ServeMux {
 	social := http.NewServeMux()
 	// SSE endpoint for notifications
@@ -32,22 +63,18 @@ func Mux() *http.ServeMux {
 
 	// This The First Handler Of Login
 	// HER I WILL CREATE API FOR REDIRECT THE / END POINT BY STATE OF CURRENT USER !
-	social.HandleFunc("/uploads", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/uploads/", http.StatusMovedPermanently)
-	})
-	social.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 	social.HandleFunc("/checkstate", auth.CheckState)
 	social.HandleFunc("/login", auth.Login)
 	social.HandleFunc("/logout", auth.Logout)
 	social.HandleFunc("/register", auth.Register)
-	social.HandleFunc("/profile/", midle.AuthMiddleware(handler.Profile))
+	registerTree(social, "/profile/", midle.AuthMiddleware(handler.Profile))
 
 	//
 	social.HandleFunc("/Createpost", midle.AuthMiddleware(handler.CreatePost))
 	social.HandleFunc("/post/update", midle.AuthMiddleware(handler.Update_Post))
 	social.HandleFunc("/post/delete", midle.AuthMiddleware(handler.Delete_Post))
 	social.HandleFunc("/getposts", midle.AuthMiddleware(handler.Getposts))
-	social.HandleFunc("/posts/", midle.AuthMiddleware(handler.Submitcomment))
+	registerTree(social, "/posts/", midle.AuthMiddleware(handler.Submitcomment))
 	// <<==>>
 	social.HandleFunc("/reactions", midle.AuthMiddleware(handler.Reaction))
 	social.HandleFunc("/users-sug", midle.AuthMiddleware(handler.Getusers))
@@ -56,7 +83,7 @@ func Mux() *http.ServeMux {
 	social.HandleFunc("/update-privacy", midle.AuthMiddleware(handler.UpdatePrivacy))
 	social.HandleFunc("/profile/update", midle.AuthMiddleware(handler.UpdateProfile))
 	//
-	social.HandleFunc("/GetCUser/", midle.AuthMiddleware(handler.PostsUserProfile))
+	registerTree(social, "/GetCUser/", midle.AuthMiddleware(handler.PostsUserProfile))
 	social.HandleFunc("/Friends", midle.AuthMiddleware(handler.GetFriendlist))
 	social.HandleFunc("/my-followers", midle.AuthMiddleware(handler.GetMyFollowers))
 	social.HandleFunc("/notifications", midle.AuthMiddleware(handler.Notification))
@@ -71,7 +98,7 @@ func Mux() *http.ServeMux {
 	social.HandleFunc("/group/leave", midle.AuthMiddleware(handler.Leave_Group))
 	social.HandleFunc("/group/delete", midle.AuthMiddleware(handler.Delete_Group))
 	social.HandleFunc("/accept-reject-join", midle.AuthMiddleware(handler.Accept_or_reject_join))
-	social.HandleFunc("/Get_Group_By_ID/", midle.AuthMiddleware(handler.Get_Group_By_ID))
+	registerTree(social, "/Get_Group_By_ID/", midle.AuthMiddleware(handler.Get_Group_By_ID))
 	social.HandleFunc("/Creat_Post_Groupe", midle.AuthMiddleware(handler.Create_Post_In_Groupe))
 	social.HandleFunc("/group-post/update", midle.AuthMiddleware(handler.Update_Group_Post))
 	social.HandleFunc("/group-post/delete", midle.AuthMiddleware(handler.Delete_Group_Post))
@@ -88,11 +115,18 @@ func Runserver() {
 	// who is listenerserver it's depend on it to routing
 	// and handle redirection every endoint to theere handlers
 	Server := &http.Server{
-		Addr:    ":8080",
-		Handler: midle.CORSMiddleware(Mux()),
+		Addr:    ":" + port(),
+		Handler: midle.CORSMiddleware(Router()),
 	}
 	fmt.Println("THE SERVER IT'S RUNING NOW BE HAPPY FRIENDS")
 	if err := Server.ListenAndServe(); err != nil {
 		fmt.Printf("Server failed: %v\n", err)
 	}
+}
+
+func port() string {
+	if p := os.Getenv("PORT"); p != "" {
+		return p
+	}
+	return "8080"
 }

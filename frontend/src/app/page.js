@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Toast from "./components/ui/Toast";
 import styles from "./page.module.css";
+import { API_URL } from "./lib/api";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -26,7 +27,7 @@ export default function LoginPage() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch("http://localhost:8080/checkstate", {
+        const res = await fetch(`${API_URL}/checkstate`, {
           method: "GET",
           credentials: "include",
         });
@@ -49,7 +50,7 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8080/login", {
+      const res = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -9,6 +9,7 @@ import { RenderPosts } from "../components/posts/post";
 import { Renderbar } from "../components/bar/bar";
 import { Renderformpost } from "../components/createpost/Createpost";
 import FriendsList from "../components/friendlist/friendlist";
+import { API_URL } from "../lib/api";
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
@@ -40,7 +41,7 @@ export default function Home() {
         try {
           const postType = post.group_id ? "group_post" : "post";
           const res = await fetch(
-            `http://localhost:8080/posts/${post.id}/comments?post_type=${postType}`,
+            `${API_URL}/posts/${post.id}/comments?post_type=${postType}`,
             { credentials: "include" }
           );
 
@@ -74,7 +75,7 @@ export default function Home() {
     // Artificial delay to make scroll feel smoother
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
-      const res = await fetch(`http://localhost:8080/getposts?limit=10&offset=${currentOffset}`, {
+      const res = await fetch(`${API_URL}/getposts?limit=10&offset=${currentOffset}`, {
         credentials: "include",
       });
       if (res.ok) {
@@ -101,7 +102,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchFollowers() {
       try {
-        const res = await fetch("http://localhost:8080/my-followers", {
+        const res = await fetch(`${API_URL}/my-followers`, {
           credentials: "include",
         });
         if (res.ok) {
@@ -143,7 +144,7 @@ export default function Home() {
     if (imageFile) formData.append("image", imageFile);
 
     try {
-      const res = await fetch("http://localhost:8080/Createpost", {
+      const res = await fetch(`${API_URL}/Createpost`, {
         method: "POST",
         credentials: "include",
         body: formData,

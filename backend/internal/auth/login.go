@@ -67,6 +67,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Name:     "session",
 		Value:    session,
 		Expires:  time.Now().Add(time.Hour),
+		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})

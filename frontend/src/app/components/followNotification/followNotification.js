@@ -6,6 +6,7 @@ import { useNotifications } from "../notifications/NotificationsContext";
 import { useRouter } from "next/navigation";
 import styles from "./notification.module.css";
 import { Check, X, UserPlus } from "lucide-react";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 /**
  * Determines the UI display state from the raw notification data.
@@ -61,7 +62,7 @@ export default function FollowRequest({ request }) {
 
   const handleFollowAction = async (senderId, action) => {
     try {
-      const res = await fetch(`http://localhost:8080/request_follow`, {
+      const res = await fetch(`${API_URL}/request_follow`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -92,7 +93,7 @@ export default function FollowRequest({ request }) {
   const handleFollowBack = async (user_id) => {
     try {
       setFollowBackLoading(true);
-      const res = await fetch("http://localhost:8080/toggle-follow", {
+      const res = await fetch(`${API_URL}/toggle-follow`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ followed_id: user_id }),
@@ -141,7 +142,7 @@ export default function FollowRequest({ request }) {
     >
       <img
         className={styles.avatar}
-        src={request.sender.avatar ? `http://localhost:8080/${request.sender.avatar}` : "/default-avatar.png"}
+        src={request.sender.avatar ? `${UPLOAD_URL}/${request.sender.avatar}` : "/default-avatar.png"}
         alt={request.sender.first_name}
         onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
         onClick={(e) => { e.stopPropagation(); router.push(`/profile?id=${request.sender.id}`); }}

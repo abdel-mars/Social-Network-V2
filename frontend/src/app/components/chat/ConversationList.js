@@ -5,6 +5,7 @@ import { timeAgo } from "../../lib/time";
 import { Users, User, MessageSquare } from "lucide-react";
 import { useChat } from "./ChatContext";
 import style from "./chat.module.css";
+import { API_URL, UPLOAD_URL } from "../../lib/api";
 
 export default function ConversationList({
   conversations,
@@ -21,7 +22,7 @@ export default function ConversationList({
   useEffect(() => {
     async function fetchConversations() {
       try {
-        const res = await fetch("http://localhost:8080/chat/conversations", {
+        const res = await fetch(`${API_URL}/chat/conversations`, {
           credentials: "include",
         });
         if (res.ok) {
@@ -110,7 +111,7 @@ export default function ConversationList({
                   ) : (
                     <img
                       className={style.convAvatar}
-                      src={conv.avatar ? `http://localhost:8080/${conv.avatar}` : "/default-avatar.png"}
+                      src={conv.avatar ? `${UPLOAD_URL}/${conv.avatar}` : "/default-avatar.png"}
                       alt={conv.username}
                       onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
                     />
