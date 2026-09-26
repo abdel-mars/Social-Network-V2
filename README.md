@@ -1,5 +1,7 @@
 # Social-Network-V2
 
+![Social-Network-V2 logo](frontend/public/rabbit.png)
+
 Un réseau social complet : publications, groupes, événements, messagerie instantanée
 et notifications en temps réel.
 
