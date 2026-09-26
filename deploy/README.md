@@ -89,7 +89,8 @@ Next.js dev server directly on 3000 and 8080.
 
 ## Where state lives
 
-Two bind mounts, neither of which is in git:
+Two bind mounts, **both tracked in Git** (the database is committed; the uploads
+directory is empty in the repo but the path is tracked):
 
 | Path                  | Contents                                        |
 | --------------------- | ----------------------------------------------- |
@@ -98,6 +99,17 @@ Two bind mounts, neither of which is in git:
 
 They survive rebuilds because they are mounted into the container, not baked
 into the image. Back them up together; the database stores the file names.
+
+**Important:** the running backend writes to `forum.db` on every request. Because
+the file is tracked, a `git pull` on the server would conflict. After cloning,
+run this **once**:
+
+```bash
+git update-index --skip-worktree backend/database/forum.db
+```
+
+This tells Git to ignore local changes to that file on future pulls. New uploads
+land in `backend/uploads/` and are untracked, so they never cause conflicts.
 
 ## Configuration
 
