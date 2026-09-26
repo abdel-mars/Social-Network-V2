@@ -1,3 +1,8 @@
+//go:build ignore
+
+// Standalone scratch script, not part of the server build.
+// Run manually with: go run test_reaction.go
+
 package main
 
 import (
