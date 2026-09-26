@@ -2,11 +2,19 @@
 // pages without colliding with them. Uploaded files stay at the root, because
 // the database stores paths like "uploads/photo.jpeg".
 //
-// NEXT_PUBLIC_API_URL is the backend's scheme and host. It is inlined at build
-// time, so leave it unset for local development, where the backend runs on
-// :8080. API_URL already carries the /api prefix, so call sites read
+// API_URL already carries the /api prefix, so call sites read
 // `${API_URL}/login` and never repeat it.
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+//
+// Resolution order for the backend origin:
+//   1. NEXT_PUBLIC_API_URL, set during local development by run.sh.
+//   2. The page's own origin, so a production build works on any domain
+//      without being rebuilt. Caddy proxies /api to the backend, making this
+//      correct behind https.
+//   3. localhost:8080, the last resort.
+const API_ORIGIN =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined" ? window.location.origin : "") ||
+  "http://localhost:8080";
 
 export const API_URL = `${API_ORIGIN}/api`;
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   Home, User, MessageCircle, Users, LogOut,
   Bell, Menu, X, Sun, Moon
@@ -99,11 +100,7 @@ export function Renderbar() {
           <div className={style.leftSection}>
             <div className={style.logo} onClick={() => router.push("/home")}>
               <div className={style.logoIcon}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
-                  <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35" />
-                  <circle cx="12" cy="12" r="3" fill="currentColor" />
-                </svg>
+                <Image src="/rabbit.png" alt="01Social" width={28} height={28} priority />
               </div>
               <span className={style.logoText}>01Social</span>
             </div>

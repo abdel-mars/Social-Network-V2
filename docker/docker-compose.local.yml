@@ -1,0 +1,13 @@
+# Local-only overrides. Compose merges this on top of docker-compose.yml.
+#
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.local.yml up -d
+#
+# Production publishes 80/443 only, because DOMAIN=example.com makes Caddy bind
+# those inside the container. Locally there is no domain and no certificate, so
+# Caddy is told to serve plain HTTP on 8080 (see the Caddyfile) and that port
+# has to be published for the host and the browser to reach it.
+
+services:
+  caddy:
+    ports:
+      - "8080:8080"

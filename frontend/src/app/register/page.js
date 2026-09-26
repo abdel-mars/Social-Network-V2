@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Toast from "../components/ui/Toast";
 import style from "./register.module.css";
 import { API_URL } from "../lib/api";
@@ -67,11 +68,7 @@ export default function RegisterPage() {
       <div className={style.registerCard}>
         <div className={style.cardHeader}>
           <div className={style.logoRing}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
-              <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35" />
-              <circle cx="12" cy="12" r="3" fill="currentColor" />
-            </svg>
+            <Image src="/rabbit.png" alt="01Social" width={40} height={40} priority />
           </div>
           <h1 className={style.logoTitle}>01Social</h1>
           <h2 className={style.heading}>Create your account</h2>

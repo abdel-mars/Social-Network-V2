@@ -94,7 +94,7 @@ trap cleanup INT TERM EXIT
 BACKEND_PGID=$!
 PGIDS+=("$BACKEND_PGID")
 
-(cd "$FRONTEND_DIR" && exec npm run dev) >"$FRONTEND_LOG" 2>&1 &
+(cd "$FRONTEND_DIR" && NEXT_PUBLIC_API_URL="http://localhost:${BACKEND_PORT}" exec npm run dev) >"$FRONTEND_LOG" 2>&1 &
 FRONTEND_PGID=$!
 PGIDS+=("$FRONTEND_PGID")
 

@@ -1,6 +1,48 @@
-# Backend Dockerfile
-FROM golang:1.20
-WORKDIR /app
+# Backend image.
+#
+# CGO is required: the app uses github.com/mattn/go-sqlite3, which compiles
+# SQLite as C. The Go version must track go.mod (go 1.24.0) or the build fails
+# with "go.mod requires go >= 1.24.0".
+
+FROM golang:1.24-bookworm AS build
+
+ENV CGO_ENABLED=1
+WORKDIR /src
+
+# Dependencies first, so edits to the source do not re-download the module cache.
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
-RUN go mod tidy
-CMD ["go", "run", "cmd/server.go"]
+
+# -trimpath keeps build paths out of the binary; -s -w drop the symbol table.
+RUN go build -trimpath -ldflags="-s -w" -o /out/backend .
+
+# The runtime image must be glibc, not alpine: the binary links against the
+# libc that go-sqlite3 was compiled with.
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates tzdata curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# The app resolves ./database/forum.db and ./uploads relative to this directory,
+# which is what the compose bind mounts are pointed at.
+WORKDIR /app
+
+COPY --from=build /out/backend /usr/local/bin/backend
+
+# internal/Initialdb opens "file://pkg/db/migrations/sqlite", which resolves
+# against the working directory, so the migrations have to sit at /app/pkg.
+COPY --from=build /src/pkg/db/migrations /app/pkg/db/migrations
+
+# Written to by the volume mounts, so it has to exist and belong to app.
+RUN useradd --system --uid 10001 --create-home app \
+    && mkdir -p /app/database /app/uploads \
+    && chown -R app:app /app
+USER app
+
+ENV PORT=8080
+EXPOSE 8080
+
+ENTRYPOINT ["backend"]

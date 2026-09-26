@@ -1,0 +1,8 @@
+# The image builds from source; the local database and uploads are supplied by
+# volume mounts, and copying 11MB of db into every layer wastes space.
+database/
+uploads/
+*.db
+*.db-shm
+*.db-wal
+Dockerfile*

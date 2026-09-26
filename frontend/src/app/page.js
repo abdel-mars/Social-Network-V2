@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Toast from "./components/ui/Toast";
 import styles from "./page.module.css";
 import { API_URL } from "./lib/api";
@@ -96,11 +97,13 @@ export default function LoginPage() {
           {/* Logo */}
           <div className={styles.cardLogo}>
             <div className={styles.logoRing}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15" />
-                <circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.35" />
-                <circle cx="12" cy="12" r="3" fill="currentColor" />
-              </svg>
+              <Image
+                src="/rabbit.png"
+                alt="01Social"
+                width={44}
+                height={44}
+                priority
+              />
             </div>
             <h1 className={styles.logoTitle}>01Social</h1>
           </div>

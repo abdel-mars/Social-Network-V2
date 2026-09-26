@@ -1,6 +1,38 @@
-# Frontend Dockerfile
-FROM node:18
+# Frontend image.
+#
+# Built without NEXT_PUBLIC_API_URL on purpose: src/app/lib/api.js then falls
+# back to window.location.origin, so a single image works on any domain behind
+# Caddy without being rebuilt. See that file for the resolution order.
+
+FROM node:20-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund
+
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm install
-CMD ["npm", "run", "dev"]
+RUN npm run build
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+# Required for standalone output to bind 0.0.0.0 instead of localhost, which
+# would be unreachable from outside the container.
+ENV HOSTNAME=0.0.0.0
+
+RUN addgroup --system --gid 10001 nodejs \
+    && adduser --system --uid 10001 nextjs
+
+# The standalone bundle carries a minimal server plus only the traced deps.
+COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=build --chown=nextjs:nodejs /app/public ./public
+
+USER nextjs
+EXPOSE 3000
+
+ENTRYPOINT ["node", "server.js"]

@@ -1,0 +1,40 @@
+# One origin for the whole app: pages from Next.js, everything else from Go.
+#
+# Keeping both behind a single host is what lets the session cookie stay
+# SameSite=Lax and makes CORS irrelevant, so the app needs no cross-site cookie
+# handling in production.
+#
+# DOMAIN selects the mode, and is supplied by docker-compose:
+#   DOMAIN=example.com   HTTPS with an automatic Let's Encrypt certificate
+#   DOMAIN=:8080         plain HTTP on 8080, for checking the routes locally
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# The API. flush_interval -1 turns off response buffering, without which
+	# Caddy holds the chat WebSocket (/api/ws/chat) and the notification
+	# stream (/api/events) instead of relaying them as they arrive.
+	handle /api/* {
+		reverse_proxy backend:8080 {
+			flush_interval -1
+		}
+	}
+
+	# Uploaded files. These sit at the root because the database stores paths
+	# like "uploads/photo.jpeg", which the frontend appends to the origin
+	# without the /api prefix.
+	handle /uploads/* {
+		reverse_proxy backend:8080
+	}
+
+	# Everything else is a page. Next.js serves /_next, /_next/image, and the
+	# app routes here, and streams the rest on demand.
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
