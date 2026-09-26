@@ -85,15 +85,36 @@
   line-height: 1.4;
 }
 
+.contentWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .postContent {
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.65;
   white-space: pre-wrap;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.readMoreBtn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: color var(--transition);
+}
+
+.readMoreBtn:hover {
+  color: var(--accent-dark);
 }
 
 /* Image */

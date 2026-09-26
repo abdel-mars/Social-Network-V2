@@ -256,6 +256,7 @@ export function PostModel({
                 onChange={(e) => setEditContent(e.target.value)}
                 className={styles.editTextarea}
                 placeholder="Post content"
+                maxLength={100}
                 rows={5}
               />
 

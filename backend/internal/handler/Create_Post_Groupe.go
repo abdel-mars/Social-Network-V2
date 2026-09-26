@@ -60,6 +60,12 @@ func Create_Post_In_Groupe(w http.ResponseWriter, r *http.Request) {
 	}
 	title := r.FormValue("title")
 	content := r.FormValue("content")
+
+	if code, msg := validatePostText(title, content); code != 0 {
+		http.Error(w, msg, code)
+		return
+	}
+
 	fmt.Println("the title :", title)
 	fmt.Println("The content", content)
 	fmt.Println("the group_id", groupID)

@@ -37,6 +37,11 @@ func Update_Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if code, msg := validatePostText(req.Title, req.Content); code != 0 {
+		http.Error(w, msg, code)
+		return
+	}
+
 	var ownerID int
 	err := key.DB.QueryRow(`SELECT user_id FROM posts WHERE id = ?`, req.PostID).Scan(&ownerID)
 	if err != nil {

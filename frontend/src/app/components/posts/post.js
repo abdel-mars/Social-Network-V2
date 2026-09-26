@@ -16,6 +16,14 @@ export function RenderPosts({ post, setPosts }) {
   const [newComment, setNewcomment] = useState("");
   const [comments, setComments] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
+  const [showFullContent, setShowFullContent] = useState(false);
+  const PREVIEW_CHARS = 40;
+  const content = post.content || "";
+  const shouldTruncate = content.length > PREVIEW_CHARS;
+  const visibleContent =
+    shouldTruncate && !showFullContent
+      ? content.slice(0, PREVIEW_CHARS).trimEnd() + "…"
+      : content;
 
   const { handleReaction } = useReactions({
     setPosts,
@@ -105,7 +113,20 @@ export function RenderPosts({ post, setPosts }) {
 
         {/* Content */}
         <h3 className={styles.postTitle}>{post.title}</h3>
-        <p className={styles.postContent}>{post.content}</p>
+        <div className={styles.contentWrapper}>
+          <p className={styles.postContent}>{visibleContent}</p>
+          {shouldTruncate && (
+            <button
+              className={styles.readMoreBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFullContent((prev) => !prev);
+              }}
+            >
+              {showFullContent ? "Read less" : "Read more"}
+            </button>
+          )}
+        </div>
 
         {/* Image */}
         {post.image_path && (

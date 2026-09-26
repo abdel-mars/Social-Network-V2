@@ -59,24 +59,36 @@ export function Renderformpost({
         </div>
 
         <form onSubmit={handleCreatePost} className={styles.form}>
-          <input
-            type="text"
-            id="post-title-input"
-            placeholder="Title"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            className={styles.input}
-            required
-          />
+<div className={styles.inputWrapper}>
+            <input
+              type="text"
+              id="post-title-input"
+              placeholder="Title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              className={styles.input}
+              maxLength={25}
+              required
+            />
+            <span className={`${styles.charCounter} ${newTitle.length >= 25 ? styles.charCounterLimit : ""}`}>
+              {newTitle.length}/25
+            </span>
+          </div>
 
-          <textarea
-            id="post-content-input"
-            placeholder="What's on your mind?"
-            value={newContent}
-            onChange={(e) => setNewContent(e.target.value)}
-            className={styles.textarea}
-            required
-          />
+          <div className={styles.textareaWrapper}>
+            <textarea
+              id="post-content-input"
+              placeholder="What's on your mind?"
+              value={newContent}
+              onChange={(e) => setNewContent(e.target.value)}
+              className={styles.textarea}
+              maxLength={100}
+              required
+            />
+            <span className={`${styles.charCounter} ${newContent.length >= 100 ? styles.charCounterLimit : ""}`}>
+              {newContent.length}/100
+            </span>
+          </div>
 
           {privacy !== undefined && (
             <div className={styles.privacySection}>

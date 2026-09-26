@@ -10,8 +10,26 @@ import (
 	"time"
 	"os"
 	"io"
+	"unicode/utf8"
 
 )
+
+const (
+	postTitleMaxChars   = 25
+	postContentMaxChars = 100
+)
+
+// validatePostText rejects posts whose title or content is too long.
+// Counts runes rather than bytes so non-ASCII text is measured correctly.
+func validatePostText(title, content string) (int, string) {
+	if utf8.RuneCountInString(title) > postTitleMaxChars {
+		return http.StatusBadRequest, fmt.Sprintf("Title must be %d characters or less", postTitleMaxChars)
+	}
+	if utf8.RuneCountInString(content) > postContentMaxChars {
+		return http.StatusBadRequest, fmt.Sprintf("Content must be %d characters or less", postContentMaxChars)
+	}
+	return 0, ""
+}
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
     fmt.Println("The Create Post It's Calling From Front")
@@ -38,9 +56,15 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    title := r.FormValue("title")
-    content := r.FormValue("content")
-    privacy := r.FormValue("privacy")
+	title := r.FormValue("title")
+	content := r.FormValue("content")
+
+	if code, msg := validatePostText(title, content); code != 0 {
+		http.Error(w, msg, code)
+		return
+	}
+
+	privacy := r.FormValue("privacy")
     if privacy == "" {
         privacy = "public"
     }

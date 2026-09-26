@@ -34,6 +34,11 @@ func Update_Group_Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if code, msg := validatePostText(req.Title, req.Content); code != 0 {
+		http.Error(w, msg, code)
+		return
+	}
+
 	var creatorID int
 	err := key.DB.QueryRow(`SELECT creator_id FROM group_posts WHERE id = ?`, req.PostID).Scan(&creatorID)
 	if err != nil {
