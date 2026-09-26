@@ -1,6 +1,8 @@
 # Social-Network-V2
 
-![Social-Network-V2 logo](frontend/public/rabbit.png)
+<div align="center">
+  <img src="frontend/public/rabbit.png" alt="Social-Network-V2 logo" width="120">
+</div>
 
 Un réseau social complet : publications, groupes, événements, messagerie instantanée
 et notifications en temps réel.
